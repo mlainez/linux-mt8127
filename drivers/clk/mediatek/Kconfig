@@ -476,12 +476,14 @@ config COMMON_CLK_MT8127
 	default ARCH_MEDIATEK && ARM
 	help
 	  This driver supports the MediaTek MT8127 clocks needed to scale the
-	  CPU frequency: the PLLs of the apmixedsys and the CPU clock mux of
-	  the infracfg. The peripheral clocks are not described yet and keep
-	  the state the bootloader left them in.
+	  CPU frequency (the PLLs of the apmixedsys and the CPU clock mux of
+	  the infracfg) and the I2C and AP DMA clock gates of the pericfg. The other
+	  peripheral clocks are not described yet and keep the state the
+	  bootloader left them in.
 
 	  To compile this driver as a module, choose M here: the modules
-	  will be called clk-mt8127-apmixedsys and clk-mt8127-infracfg.
+	  will be called clk-mt8127-apmixedsys, clk-mt8127-infracfg and
+	  clk-mt8127-pericfg.
 
 config COMMON_CLK_MT8135
 	tristate "Clock driver for MediaTek MT8135"
