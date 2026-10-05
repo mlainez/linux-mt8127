@@ -64,3 +64,37 @@
 		};
 	};
 };
+
+/*
+ * USB device mode. The bootloader used the controller for fastboot; the PHY
+ * driver redoes the vendor power-on sequence and ungates the USB0 clock.
+ * Clocks are dummies until the MT8127 clock driver exists.
+ */
+/ {
+	usb_clk: usb-clk {
+		compatible = "fixed-clock";
+		#clock-cells = <0>;
+		clock-frequency = <48000000>;
+	};
+
+	soc {
+		usb_phy: usb-phy@11210000 {
+			compatible = "mediatek,mt8127-usb2-phy";
+			reg = <0 0x11210000 0 0x1000>,	/* USB2 PHY */
+			      <0 0x10003000 0 0x1000>,	/* PERICFG (clock gates) */
+			      <0 0x10209000 0 0x1000>;	/* APMIXEDSYS (48 MHz) */
+			#phy-cells = <0>;
+		};
+
+		usb@11200000 {
+			compatible = "mediatek,mt2701-musb", "mediatek,mtk-musb";
+			reg = <0 0x11200000 0 0x1000>;
+			interrupts = <GIC_SPI 32 IRQ_TYPE_LEVEL_LOW>;
+			interrupt-names = "mc";
+			clocks = <&usb_clk>, <&usb_clk>, <&usb_clk>;
+			clock-names = "main", "mcu", "univpll";
+			phys = <&usb_phy>;
+			dr_mode = "peripheral";
+		};
+	};
+};
