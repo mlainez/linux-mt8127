@@ -43,5 +43,14 @@
 			reg = <0 0xbee00000 0 0x1000000>;
 			no-map;
 		};
+
+		/* Survives a warm reset: the previous boot's log is in /sys/fs/pstore. */
+		ramoops@bd000000 {
+			compatible = "ramoops";
+			reg = <0 0xbd000000 0 0x100000>;
+			record-size = <0x20000>;
+			console-size = <0x80000>;
+			no-map;
+		};
 	};
 };
