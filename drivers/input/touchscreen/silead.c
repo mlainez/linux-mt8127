@@ -78,6 +78,7 @@ struct silead_ts_data {
 	u32 efi_fw_min_max[4];
 	bool efi_fw_min_max_set;
 	bool pen_supported;
+	bool chunked_read;
 	bool pen_down;
 	u32 pen_x_res;
 	u32 pen_y_res;
@@ -239,6 +240,41 @@ sync:
 	return true;
 }
 
+/*
+ * Some I2C controllers (MediaTek) limit the read part of a combined transfer to
+ * 31 bytes, which is less than the frame the chip reports. The registers are
+ * byte addressed, so the frame can be read in pieces.
+ */
+#define SILEAD_READ_CHUNK	16
+
+static int silead_ts_read_frame(struct i2c_client *client, u8 *buf)
+{
+	struct silead_ts_data *data = i2c_get_clientdata(client);
+	int offset, len, error;
+
+	if (!data->chunked_read) {
+		error = i2c_smbus_read_i2c_block_data(client, SILEAD_REG_DATA,
+						      SILEAD_TS_DATA_LEN, buf);
+		if (error != -EOPNOTSUPP)
+			return error;
+
+		data->chunked_read = true;
+	}
+
+	for (offset = 0; offset < SILEAD_TS_DATA_LEN; offset += len) {
+		len = min(SILEAD_READ_CHUNK, SILEAD_TS_DATA_LEN - offset);
+		error = i2c_smbus_read_i2c_block_data(client,
+						      SILEAD_REG_DATA + offset,
+						      len, buf + offset);
+		if (error < 0)
+			return error;
+		if (error != len)
+			return -EIO;
+	}
+
+	return SILEAD_TS_DATA_LEN;
+}
+
 static void silead_ts_read_data(struct i2c_client *client)
 {
 	struct silead_ts_data *data = i2c_get_clientdata(client);
@@ -248,8 +284,7 @@ static void silead_ts_read_data(struct i2c_client *client)
 	int touch_nr, softbutton, error, i;
 	bool softbutton_pressed = false;
 
-	error = i2c_smbus_read_i2c_block_data(client, SILEAD_REG_DATA,
-					      SILEAD_TS_DATA_LEN, buf);
+	error = silead_ts_read_frame(client, buf);
 	if (error < 0) {
 		dev_err(dev, "Data read error %d\n", error);
 		return;
