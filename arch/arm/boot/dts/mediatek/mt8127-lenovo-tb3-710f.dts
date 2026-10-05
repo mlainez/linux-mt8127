@@ -6,6 +6,7 @@
  */
 /dts-v1/;
 #include <dt-bindings/clock/mt8127-clk.h>
+#include <dt-bindings/gpio/gpio.h>
 #include <dt-bindings/input/input.h>
 #include <dt-bindings/pinctrl/mt8127-pinfunc.h>
 #include "mt8127.dtsi"
@@ -357,6 +358,18 @@
 		};
 	};
 
+	touch_pins: touch-pins {
+		pins-irq {
+			pinmux = <MT8127_PIN_29_EINT7__FUNC_GPIO29>;
+			bias-pull-up;
+			input-enable;
+		};
+
+		pins-reset {
+			pinmux = <MT8127_PIN_45_EINT13__FUNC_GPIO45>;
+		};
+	};
+
 	i2c1_pins: i2c1-pins {
 		pins {
 			pinmux = <MT8127_PIN_57_SDA1__FUNC_SDA1>,
@@ -378,6 +391,28 @@
 	pinctrl-names = "default";
 	pinctrl-0 = <&i2c1_pins>;
 	status = "okay";
+
+	/*
+	 * The sizes are the extents of the sensor in the units the firmware reports
+	 * (not pixels): the long axis is horizontal on the landscape display. The
+	 * reset (power) line is held low by the bootloader until the driver releases
+	 * it.
+	 */
+	touchscreen@40 {
+		compatible = "silead,gsl3670";
+		reg = <0x40>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&touch_pins>;
+		interrupt-parent = <&pio>;
+		interrupts = <7 IRQ_TYPE_EDGE_RISING>;
+		power-gpios = <&pio 45 GPIO_ACTIVE_HIGH>;
+		avdd-supply = <&mt6323_vgp2_reg>;
+		firmware-name = "gsl3670-tb3-710f.fw";
+		touchscreen-size-x = <1672>;
+		touchscreen-size-y = <903>;
+		touchscreen-inverted-y;
+		silead,max-fingers = <5>;
+	};
 };
 
 &i2c2 {
