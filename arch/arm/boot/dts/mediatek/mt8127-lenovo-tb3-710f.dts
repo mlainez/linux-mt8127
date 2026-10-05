@@ -221,3 +221,71 @@
 		};
 	};
 };
+
+/*
+ * CPU frequency scaling. The stock operating points go from 598 MHz to 1.3 GHz;
+ * the bootloader runs the CPUs at 1040 MHz and 1.15 V, which is therefore the
+ * lowest voltage known to work for anything up to that frequency. The higher
+ * points use the voltages of the stock tables.
+ */
+/ {
+	cpus {
+		cpu@0 {
+			clocks = <&infracfg CLK_INFRA_CPU_SEL>, <&clk26m>;
+			clock-names = "cpu", "intermediate";
+			proc-supply = <&mt6323_vproc_reg>;
+			operating-points-v2 = <&cpu_opp_table>;
+		};
+
+		cpu@1 {
+			clocks = <&infracfg CLK_INFRA_CPU_SEL>, <&clk26m>;
+			clock-names = "cpu", "intermediate";
+			proc-supply = <&mt6323_vproc_reg>;
+			operating-points-v2 = <&cpu_opp_table>;
+		};
+
+		cpu@2 {
+			clocks = <&infracfg CLK_INFRA_CPU_SEL>, <&clk26m>;
+			clock-names = "cpu", "intermediate";
+			proc-supply = <&mt6323_vproc_reg>;
+			operating-points-v2 = <&cpu_opp_table>;
+		};
+
+		cpu@3 {
+			clocks = <&infracfg CLK_INFRA_CPU_SEL>, <&clk26m>;
+			clock-names = "cpu", "intermediate";
+			proc-supply = <&mt6323_vproc_reg>;
+			operating-points-v2 = <&cpu_opp_table>;
+		};
+	};
+
+	cpu_opp_table: opp-table-cpu {
+		compatible = "operating-points-v2";
+		opp-shared;
+
+		opp-598000000 {
+			opp-hz = /bits/ 64 <598000000>;
+			opp-microvolt = <1150000>;
+		};
+
+		opp-747500000 {
+			opp-hz = /bits/ 64 <747500000>;
+			opp-microvolt = <1150000>;
+		};
+
+		opp-1040000000 {
+			opp-hz = /bits/ 64 <1040000000>;
+			opp-microvolt = <1150000>;
+		};
+
+		opp-1196000000 {
+			opp-hz = /bits/ 64 <1196000000>;
+			opp-microvolt = <1200000>;
+		};
+
+		opp-1300000000 {
+			opp-hz = /bits/ 64 <1300000000>;
+			opp-microvolt = <1300000>;
+		};
+	};
+};
