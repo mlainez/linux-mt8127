@@ -54,3 +54,13 @@
 		};
 	};
 };
+
+/* The boot ROM chain leaves the watchdog armed; the kernel has to service it. */
+/ {
+	soc {
+		watchdog@10007000 {
+			compatible = "mediatek,mt6589-wdt";
+			reg = <0 0x10007000 0 0x100>;
+		};
+	};
+};
