@@ -155,3 +155,48 @@
 		};
 	};
 };
+
+/*
+ * PMIC wrapper and the MT6323 PMIC. The preloader already initialised the
+ * wrapper, and the PMIC interrupt (an EINT line) is not described yet, so only
+ * the PMIC functions that need no interrupt are available.
+ *
+ * Only the CPU supply is constrained here, and it must stay on. Pass
+ * regulator_ignore_unused on the command line: the other rails (eMMC, USB, IO)
+ * were enabled by the bootloader and have no consumer in this tree yet.
+ */
+/ {
+	clk26m: oscillator-26m {
+		compatible = "fixed-clock";
+		#clock-cells = <0>;
+		clock-frequency = <26000000>;
+		clock-output-names = "clk26m";
+	};
+
+	soc {
+		pwrap: pwrap@1000d000 {
+			compatible = "mediatek,mt8127-pwrap";
+			reg = <0 0x1000d000 0 0x1000>;
+			reg-names = "pwrap";
+			interrupts = <GIC_SPI 115 IRQ_TYPE_LEVEL_HIGH>;
+			clocks = <&clk26m>, <&clk26m>;
+			clock-names = "spi", "wrap";
+
+			pmic {
+				compatible = "mediatek,mt6323";
+
+				regulators {
+					compatible = "mediatek,mt6323-regulator";
+
+					mt6323_vproc_reg: buck_vproc {
+						regulator-name = "vproc";
+						regulator-min-microvolt = <1050000>;
+						regulator-max-microvolt = <1300000>;
+						regulator-always-on;
+						regulator-boot-on;
+					};
+				};
+			};
+		};
+	};
+};
