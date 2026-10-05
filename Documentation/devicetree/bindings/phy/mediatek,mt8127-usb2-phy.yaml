@@ -1,0 +1,49 @@
+# SPDX-License-Identifier: (GPL-2.0-only OR BSD-2-Clause)
+%YAML 1.2
+---
+$id: http://devicetree.org/schemas/phy/mediatek,mt8127-usb2-phy.yaml#
+$schema: http://devicetree.org/meta-schemas/core.yaml#
+
+title: MediaTek MT8127 USB2 PHY
+
+maintainers:
+  - Marc Lainez <marc.lainez@gmail.com>
+
+description:
+  The USB2 PHY of the MT8127 SoC, which feeds the MUSB controller. Until there
+  is a clock driver for the SoC, the PHY driver ungates the USB0 clock in the
+  peripheral configuration block and enables the 48 MHz USB clock in the
+  APMIXEDSYS itself.
+
+properties:
+  $nodename:
+    pattern: "^usb-phy@[0-9a-f]+$"
+
+  compatible:
+    const: mediatek,mt8127-usb2-phy
+
+  reg:
+    items:
+      - description: USB2 PHY registers
+      - description: PERICFG registers (USB0 clock gate)
+      - description: APMIXEDSYS registers (48 MHz USB clock enable)
+
+  "#phy-cells":
+    const: 0
+
+required:
+  - compatible
+  - reg
+  - "#phy-cells"
+
+additionalProperties: false
+
+examples:
+  - |
+    usb-phy@11210000 {
+        compatible = "mediatek,mt8127-usb2-phy";
+        reg = <0x11210000 0x1000>,
+              <0x10003000 0x1000>,
+              <0x10209000 0x1000>;
+        #phy-cells = <0>;
+    };
