@@ -230,6 +230,19 @@
 			#clock-cells = <1>;
 		};
 
+		/*
+		 * The bus clock: the bootloader selects MAINPLL / 4 (273 MHz) for the AXI
+		 * bus, and the I2C and DMA blocks of the pericfg run from it.
+		 */
+		axi_sel: clock-axi {
+			compatible = "fixed-factor-clock";
+			clocks = <&apmixedsys CLK_APMIXED_MAINPLL>;
+			#clock-cells = <0>;
+			clock-mult = <1>;
+			clock-div = <4>;
+			clock-output-names = "axi_sel";
+		};
+
 		infracfg: clock-controller@10001000 {
 			compatible = "mediatek,mt8127-infracfg", "syscon";
 			reg = <0 0x10001000 0 0x1000>;
