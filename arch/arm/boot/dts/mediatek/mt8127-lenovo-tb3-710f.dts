@@ -1,0 +1,47 @@
+// SPDX-License-Identifier: GPL-2.0
+/*
+ * Lenovo Tab3 7 Essential (TB3-710F), MediaTek MT8127.
+ * First-boot description: everything runs on the state left by the bootloader
+ * (fixed clocks, LK-initialised panel as simple-framebuffer).
+ */
+/dts-v1/;
+#include "mt8127.dtsi"
+
+/ {
+	model = "Lenovo Tab3 7 Essential (TB3-710F)";
+	compatible = "lenovo,tb3-710f", "mediatek,mt8127";
+
+	chosen {
+		#address-cells = <2>;
+		#size-cells = <2>;
+		ranges;
+		bootargs = "console=tty0 loglevel=8 rdinit=/init";
+
+		/* LK scans out 16 bpp (RGB565); the vendor kernel switches to 32 bpp later. */
+		framebuffer0: framebuffer@bee00000 {
+			compatible = "simple-framebuffer";
+			reg = <0 0xbee00000 0 (2048 * 600)>;
+			width = <1024>;
+			height = <600>;
+			stride = <2048>;
+			format = "r5g6b5";
+		};
+	};
+
+	/* System RAM ends at 0xbed00000: the rest is the TEE and the LK framebuffer. */
+	memory@80000000 {
+		device_type = "memory";
+		reg = <0 0x80000000 0 0x3ed00000>;
+	};
+
+	reserved-memory {
+		#address-cells = <2>;
+		#size-cells = <2>;
+		ranges;
+
+		framebuffer@bee00000 {
+			reg = <0 0xbee00000 0 0x1000000>;
+			no-map;
+		};
+	};
+};
