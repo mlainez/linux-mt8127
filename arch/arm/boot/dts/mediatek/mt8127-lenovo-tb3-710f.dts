@@ -98,3 +98,60 @@
 		};
 	};
 };
+
+/*
+ * eMMC on MSDC0. The bootloader boots from it, so pads, clock mux/gate and the
+ * VEMC/VIO18 rails are already set up; the driver gets a fixed 200 MHz source clock
+ * and empty pinctrl states so nothing gets reconfigured. The MT8127 controller is
+ * the MT8135-generation MSDC (no tuning/enhanced-rx features).
+ *
+ * Speed: high-speed single data rate at 52 MHz. DDR (the stock kernel's mode) is left
+ * out on purpose: with the sampling/delay settings the bootloader leaves, multi-block
+ * writes fail (CMD12 response timeouts, lost data) while reads work. 26 and 52 MHz SDR
+ * pass repeated 256 MiB write/read-back checks.
+ */
+/ {
+	/* Rails the bootloader already enabled for the eMMC (MT6323 VEMC_3V3 / VIO18). */
+	reg_vemc: regulator-vemc {
+		compatible = "regulator-fixed";
+		regulator-name = "vemc_3v3";
+		regulator-min-microvolt = <3300000>;
+		regulator-max-microvolt = <3300000>;
+		regulator-always-on;
+	};
+
+	reg_vio18: regulator-vio18 {
+		compatible = "regulator-fixed";
+		regulator-name = "vio18";
+		regulator-min-microvolt = <1800000>;
+		regulator-max-microvolt = <1800000>;
+		regulator-always-on;
+	};
+
+	msdc_clk: msdc-clk {
+		compatible = "fixed-clock";
+		#clock-cells = <0>;
+		clock-frequency = <200000000>;
+	};
+
+	soc {
+		mmc0: mmc@11230000 {
+			compatible = "mediatek,mt8127-mmc", "mediatek,mt8135-mmc";
+			reg = <0 0x11230000 0 0x1000>;
+			interrupts = <GIC_SPI 39 IRQ_TYPE_LEVEL_LOW>;
+			clocks = <&msdc_clk>, <&msdc_clk>;
+			clock-names = "source", "hclk";
+			pinctrl-names = "default", "state_uhs";
+			pinctrl-0 = <>;
+			pinctrl-1 = <>;
+			vmmc-supply = <&reg_vemc>;
+			vqmmc-supply = <&reg_vio18>;
+			bus-width = <8>;
+			max-frequency = <52000000>;
+			cap-mmc-highspeed;
+			non-removable;
+			no-sd;
+			no-sdio;
+		};
+	};
+};
