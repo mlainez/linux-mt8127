@@ -24,6 +24,20 @@ config PHY_MTK_XFI_TPHY
 	  1GE and 2.5GE modes via the LynxI PCS, and 5GE and 10GE modes
 	  via the USXGMII PCS found in MediaTek SoCs with 10G Ethernet.
 
+config PHY_MT8127_USB2
+	tristate "MediaTek MT8127 USB2 PHY driver"
+	depends on ARCH_MEDIATEK || COMPILE_TEST
+	select GENERIC_PHY
+	help
+	  Support for the USB2 PHY of the MediaTek MT8127 SoC, which is
+	  used by the MUSB controller. The driver replays the vendor
+	  power-on sequence on top of the state left by the bootloader.
+	  It also ungates the USB0 clock and enables the 48 MHz USB clock
+	  directly, as there is no clock driver for this SoC yet.
+
+	  To compile this driver as a module, choose M here: the module
+	  will be called phy-mt8127-usb2.
+
 config PHY_MTK_TPHY
 	tristate "MediaTek T-PHY Driver"
 	depends on ARCH_MEDIATEK || COMPILE_TEST
