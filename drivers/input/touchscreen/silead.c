@@ -312,12 +312,27 @@ sync:
 	input_sync(input);
 }
 
-static int silead_ts_init(struct i2c_client *client)
+/*
+ * The chip starts resetting as soon as it receives the reset command, and
+ * some of them (GSL3670) do not acknowledge the byte that carries it.
+ */
+static int silead_ts_cmd_reset(struct i2c_client *client)
 {
 	int error;
 
 	error = i2c_smbus_write_byte_data(client, SILEAD_REG_RESET,
 					  SILEAD_CMD_RESET);
+	if (error == -ENXIO)
+		return 0;
+
+	return error;
+}
+
+static int silead_ts_init(struct i2c_client *client)
+{
+	int error;
+
+	error = silead_ts_cmd_reset(client);
 	if (error)
 		goto i2c_write_err;
 	usleep_range(SILEAD_CMD_SLEEP_MIN, SILEAD_CMD_SLEEP_MAX);
@@ -351,8 +366,7 @@ static int silead_ts_reset(struct i2c_client *client)
 {
 	int error;
 
-	error = i2c_smbus_write_byte_data(client, SILEAD_REG_RESET,
-					  SILEAD_CMD_RESET);
+	error = silead_ts_cmd_reset(client);
 	if (error)
 		goto i2c_write_err;
 	usleep_range(SILEAD_CMD_SLEEP_MIN, SILEAD_CMD_SLEEP_MAX);
