@@ -192,6 +192,15 @@
 				interrupt-controller;
 				#interrupt-cells = <2>;
 
+				power-controller {
+					compatible = "mediatek,mt6323-pwrc";
+					#power-domain-cells = <0>;
+				};
+
+				rtc {
+					compatible = "mediatek,mt6323-rtc";
+				};
+
 				keys {
 					compatible = "mediatek,mt6323-keys";
 					mediatek,long-press-mode = <1>;
@@ -212,6 +221,12 @@
 						regulator-max-microvolt = <1300000>;
 						regulator-always-on;
 						regulator-boot-on;
+					};
+
+					mt6323_vgp2_reg: ldo_vgp2 {
+						regulator-name = "vgp2";
+						regulator-min-microvolt = <2800000>;
+						regulator-max-microvolt = <2800000>;
 					};
 				};
 			};
