@@ -5,6 +5,7 @@
  * (fixed clocks, LK-initialised panel as simple-framebuffer).
  */
 /dts-v1/;
+#include <dt-bindings/clock/mt8127-clk.h>
 #include "mt8127.dtsi"
 
 / {
@@ -197,6 +198,26 @@
 					};
 				};
 			};
+		};
+	};
+};
+
+/*
+ * Clock controllers for the CPU frequency: the PLLs and the CPU clock mux. The
+ * other clocks are still fixed (see the dummy clocks above).
+ */
+/ {
+	soc {
+		apmixedsys: clock-controller@10209000 {
+			compatible = "mediatek,mt8127-apmixedsys";
+			reg = <0 0x10209000 0 0x1000>;
+			#clock-cells = <1>;
+		};
+
+		infracfg: clock-controller@10001000 {
+			compatible = "mediatek,mt8127-infracfg", "syscon";
+			reg = <0 0x10001000 0 0x1000>;
+			#clock-cells = <1>;
 		};
 	};
 };
