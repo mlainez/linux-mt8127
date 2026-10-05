@@ -378,9 +378,37 @@ static int mt6397_probe(struct platform_device *pdev)
 
 	platform_set_drvdata(pdev, pmic);
 
-	pmic->irq = platform_get_irq(pdev, 0);
-	if (pmic->irq <= 0)
+	pmic->irq = platform_get_irq_optional(pdev, 0);
+	if (pmic->irq == -EPROBE_DEFER)
 		return pmic->irq;
+
+	if (pmic->irq <= 0) {
+		/*
+		 * The interrupt line is not described (yet): only the cells
+		 * that do not need an interrupt can work.
+		 */
+		struct mfd_cell *cells;
+		int i, n = 0;
+
+		cells = devm_kcalloc(&pdev->dev, pmic_core->cell_size,
+				     sizeof(*cells), GFP_KERNEL);
+		if (!cells)
+			return -ENOMEM;
+
+		for (i = 0; i < pmic_core->cell_size; i++)
+			if (!pmic_core->cells[i].num_resources)
+				cells[n++] = pmic_core->cells[i];
+
+		dev_warn(&pdev->dev, "no interrupt: only %d of %d functions available\n",
+			 n, pmic_core->cell_size);
+
+		ret = devm_mfd_add_devices(&pdev->dev, PLATFORM_DEVID_NONE,
+					   cells, n, NULL, 0, NULL);
+		if (ret)
+			dev_err(&pdev->dev, "failed to add child devices: %d\n", ret);
+
+		return ret;
+	}
 
 	ret = pmic_core->irq_init(pmic);
 	if (ret)
