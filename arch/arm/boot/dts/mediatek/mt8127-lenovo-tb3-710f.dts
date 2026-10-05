@@ -105,8 +105,9 @@
 /*
  * eMMC on MSDC0. The bootloader boots from it, so pads, clock mux/gate and the
  * VEMC/VIO18 rails are already set up; the driver gets a fixed 200 MHz source clock
- * and empty pinctrl states so nothing gets reconfigured. The MT8127 controller is
- * the MT8135-generation MSDC (no tuning/enhanced-rx features).
+ * and pin states that only select the MSDC function the bootloader already uses,
+ * so pad pulls and drive strength stay as they are. The MT8127 controller is the
+ * MT8135-generation MSDC (no tuning/enhanced-rx features).
  *
  * Speed: high-speed single data rate at 52 MHz. DDR (the stock kernel's mode) is left
  * out on purpose: with the sampling/delay settings the bootloader leaves, multi-block
@@ -145,8 +146,8 @@
 			clocks = <&msdc_clk>, <&msdc_clk>;
 			clock-names = "source", "hclk";
 			pinctrl-names = "default", "state_uhs";
-			pinctrl-0 = <>;
-			pinctrl-1 = <>;
+			pinctrl-0 = <&mmc0_pins>;
+			pinctrl-1 = <&mmc0_pins>;
 			vmmc-supply = <&reg_vemc>;
 			vqmmc-supply = <&reg_vio18>;
 			bus-width = <8>;
@@ -340,6 +341,22 @@
  * states below keep it explicit. The on-board pull-ups are used.
  */
 &pio {
+	mmc0_pins: mmc0-pins {
+		pins {
+			pinmux = <MT8127_PIN_127_MSDC0_DAT7__FUNC_MSDC0_DAT7>,
+				 <MT8127_PIN_128_MSDC0_DAT6__FUNC_MSDC0_DAT6>,
+				 <MT8127_PIN_129_MSDC0_DAT5__FUNC_MSDC0_DAT5>,
+				 <MT8127_PIN_130_MSDC0_DAT4__FUNC_MSDC0_DAT4>,
+				 <MT8127_PIN_131_MSDC0_RSTB__FUNC_MSDC0_RSTB>,
+				 <MT8127_PIN_132_MSDC0_CMD__FUNC_MSDC0_CMD>,
+				 <MT8127_PIN_133_MSDC0_CLK__FUNC_MSDC0_CLK>,
+				 <MT8127_PIN_134_MSDC0_DAT3__FUNC_MSDC0_DAT3>,
+				 <MT8127_PIN_135_MSDC0_DAT2__FUNC_MSDC0_DAT2>,
+				 <MT8127_PIN_136_MSDC0_DAT1__FUNC_MSDC0_DAT1>,
+				 <MT8127_PIN_137_MSDC0_DAT0__FUNC_MSDC0_DAT0>;
+		};
+	};
+
 	i2c1_pins: i2c1-pins {
 		pins {
 			pinmux = <MT8127_PIN_57_SDA1__FUNC_SDA1>,
