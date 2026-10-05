@@ -115,6 +115,7 @@ properties:
           - const: mediatek,mt7988a
       - items:
           - enum:
+              - lenovo,tb3-710f
               - mediatek,mt8127-moose
           - const: mediatek,mt8127
       - items:
