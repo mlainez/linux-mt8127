@@ -1,0 +1,17 @@
+/* SPDX-License-Identifier: (GPL-2.0-only OR BSD-2-Clause) */
+#ifndef _DT_BINDINGS_CLK_MT8127_H
+#define _DT_BINDINGS_CLK_MT8127_H
+
+/* APMIXEDSYS */
+
+#define CLK_APMIXED_ARMPLL		0
+#define CLK_APMIXED_MAINPLL		1
+#define CLK_APMIXED_UNIVPLL		2
+#define CLK_APMIXED_NR_CLK		3
+
+/* INFRACFG */
+
+#define CLK_INFRA_CPU_SEL		0
+#define CLK_INFRA_NR_CLK		1
+
+#endif /* _DT_BINDINGS_CLK_MT8127_H */
