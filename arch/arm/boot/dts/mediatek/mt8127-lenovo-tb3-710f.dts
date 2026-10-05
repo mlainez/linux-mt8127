@@ -6,6 +6,7 @@
  */
 /dts-v1/;
 #include <dt-bindings/clock/mt8127-clk.h>
+#include <dt-bindings/input/input.h>
 #include "mt8127.dtsi"
 
 / {
@@ -185,6 +186,21 @@
 
 			pmic {
 				compatible = "mediatek,mt6323";
+				interrupt-parent = <&pio>;
+				interrupts = <24 IRQ_TYPE_LEVEL_HIGH>;
+				interrupt-controller;
+				#interrupt-cells = <2>;
+
+				keys {
+					compatible = "mediatek,mt6323-keys";
+					mediatek,long-press-mode = <1>;
+					power-off-time-sec = <0>;
+
+					power {
+						linux,keycodes = <KEY_POWER>;
+						wakeup-source;
+					};
+				};
 
 				regulators {
 					compatible = "mediatek,mt6323-regulator";
