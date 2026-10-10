@@ -2354,6 +2354,25 @@ static const struct pmic_wrapper_type pwrap_mt7622 = {
 	.init_soc_specific = pwrap_mt7622_init_soc_specific,
 };
 
+/*
+ * The MT8127 wrapper is the MT2701 one. It is always initialised by the
+ * bootloader, which also leaves the dynamic clock gating as it wants it, so
+ * neither the reset line (an infracfg reset bit, there is no reset controller
+ * for this SoC yet) nor the DCM are touched.
+ */
+static const struct pmic_wrapper_type pwrap_mt8127 = {
+	.regs = mt2701_regs,
+	.type = PWRAP_MT2701,
+	.arb_en_all = 0x3f,
+	.int_en_all = ~(u32)(BIT(31) | BIT(2)),
+	.int1_en_all = 0,
+	.spi_w = PWRAP_MAN_CMD_SPI_WRITE_NEW,
+	.wdt_src = PWRAP_WDT_SRC_MASK_ALL,
+	.caps = 0,
+	.init_reg_clock = pwrap_mt2701_init_reg_clock,
+	.init_soc_specific = pwrap_mt2701_init_soc_specific,
+};
+
 static const struct pmic_wrapper_type pwrap_mt8135 = {
 	.regs = mt8135_regs,
 	.type = PWRAP_MT8135,
@@ -2452,6 +2471,7 @@ static const struct of_device_id of_pwrap_match_tbl[] = {
 	{ .compatible = "mediatek,mt6797-pwrap", .data = &pwrap_mt6797 },
 	{ .compatible = "mediatek,mt6873-pwrap", .data = &pwrap_mt6873 },
 	{ .compatible = "mediatek,mt7622-pwrap", .data = &pwrap_mt7622 },
+	{ .compatible = "mediatek,mt8127-pwrap", .data = &pwrap_mt8127 },
 	{ .compatible = "mediatek,mt8135-pwrap", .data = &pwrap_mt8135 },
 	{ .compatible = "mediatek,mt8173-pwrap", .data = &pwrap_mt8173 },
 	{ .compatible = "mediatek,mt8183-pwrap", .data = &pwrap_mt8183 },
