@@ -548,14 +548,11 @@
 	};
 };
 
-/*
- * Camera pipeline (sensor interface, ISP, MIPI receiver) for the out-of-tree capture module, which programs the
- * registers directly and shares the SPM, TOPCKGEN and GPIO windows with other drivers.
- */
+/* Camera subsystem: sensor interface, ISP pass 1 and the two CSI-2 inputs (rear on port 0, front on port 1). */
 / {
 	soc {
-		cam_proto: camera@15004000 {
-			compatible = "mediatek,mt8127-cam-proto";
+		camsys: camera@15000000 {
+			compatible = "mediatek,mt8127-camsys";
 			reg = <0 0x15000000 0 0x1000>,
 			      <0 0x15004000 0 0x4000>,
 			      <0 0x15008000 0 0x1000>,
@@ -567,13 +564,74 @@
 			reg-names = "imgsys", "isp", "seninf", "mipi-rx",
 				    "mipi-ana", "spm", "topckgen", "gpio";
 			interrupts = <GIC_SPI 143 IRQ_TYPE_LEVEL_LOW>;
-			vcama-supply = <&mt6323_vcama_reg>;
-			vcamio-supply = <&mt6323_vcamio_reg>;
-			main-reset-gpios = <&pio 53 GPIO_ACTIVE_HIGH>;
-			main-powerdown-gpios = <&pio 56 GPIO_ACTIVE_HIGH>;
-			sub-reset-gpios = <&pio 55 GPIO_ACTIVE_HIGH>;
-			sub-powerdown-gpios = <&pio 54 GPIO_ACTIVE_HIGH>;
-			i2c-bus = <&i2c0>;
+			#clock-cells = <0>;
+
+			ports {
+				#address-cells = <1>;
+				#size-cells = <0>;
+
+				port@0 {
+					reg = <0>;
+					camsys_csi0_ep: endpoint {
+						remote-endpoint = <&sp2508_ep>;
+						data-lanes = <1>;
+					};
+				};
+
+				port@1 {
+					reg = <1>;
+					camsys_csi1_ep: endpoint {
+						remote-endpoint = <&sp0a20_ep>;
+						data-lanes = <1>;
+					};
+				};
+			};
+		};
+	};
+};
+
+&i2c0 {
+	camera@3c {
+		compatible = "superpix,sp2508";
+		reg = <0x3c>;
+		clocks = <&camsys>;
+		clock-names = "xclk";
+		clock-frequency = <24000000>;
+		avdd-supply = <&mt6323_vcama_reg>;
+		dovdd-supply = <&mt6323_vcamio_reg>;
+		reset-gpios = <&pio 53 GPIO_ACTIVE_LOW>;
+		powerdown-gpios = <&pio 56 GPIO_ACTIVE_HIGH>;
+		orientation = <1>;
+		rotation = <0>;
+
+		port {
+			sp2508_ep: endpoint {
+				remote-endpoint = <&camsys_csi0_ep>;
+				data-lanes = <1>;
+				link-frequencies = /bits/ 64 <300000000>;
+			};
+		};
+	};
+
+	camera@21 {
+		compatible = "superpix,sp0a20";
+		reg = <0x21>;
+		clocks = <&camsys>;
+		clock-names = "xclk";
+		clock-frequency = <24000000>;
+		avdd-supply = <&mt6323_vcama_reg>;
+		dovdd-supply = <&mt6323_vcamio_reg>;
+		reset-gpios = <&pio 55 GPIO_ACTIVE_LOW>;
+		powerdown-gpios = <&pio 54 GPIO_ACTIVE_HIGH>;
+		orientation = <0>;
+		rotation = <0>;
+
+		port {
+			sp0a20_ep: endpoint {
+				remote-endpoint = <&camsys_csi1_ep>;
+				data-lanes = <1>;
+				link-frequencies = /bits/ 64 <104000000>;
+			};
 		};
 	};
 };
