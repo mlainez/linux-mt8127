@@ -419,4 +419,16 @@
 	pinctrl-names = "default";
 	pinctrl-0 = <&i2c2_pins>;
 	status = "okay";
+
+	/*
+	 * The stock kernel polls the accelerometer, so no interrupt is described. The
+	 * mount matrix is the stock orientation 5: x' = y, y' = x, z' = -z.
+	 */
+	accelerometer@18 {
+		compatible = "bosch,bma255";
+		reg = <0x18>;
+		mount-matrix = "0", "1", "0",
+			       "1", "0", "0",
+			       "0", "0", "-1";
+	};
 };
