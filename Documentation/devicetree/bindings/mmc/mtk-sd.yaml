@@ -31,6 +31,9 @@ properties:
           - const: mediatek,mt7623-mmc
           - const: mediatek,mt2701-mmc
       - items:
+          - const: mediatek,mt8127-mmc
+          - const: mediatek,mt8135-mmc
+      - items:
           - enum:
               - mediatek,mt6893-mmc
               - mediatek,mt8186-mmc
