@@ -483,6 +483,17 @@
 			clock-names = "apdma";
 		};
 
+		/* The memory-mapped host interface of the WiFi function inside CONSYS. */
+		wifi: wifi@180f0000 {
+			compatible = "mediatek,mt8127-wlan";
+			reg = <0 0x180f0000 0 0x5c>,
+			      <0 0x11000180 0 0x54>;
+			reg-names = "hif", "apdma-hif";
+			interrupts = <GIC_SPI 184 IRQ_TYPE_LEVEL_LOW>;
+			clocks = <&pericfg CLK_PERI_AP_DMA>;
+			clock-names = "apdma";
+		};
+
 		consys: consys@18070000 {
 			compatible = "mediatek,mt8127-consys";
 			reg = <0 0x10006000 0 0x1000>,
