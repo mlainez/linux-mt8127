@@ -6,6 +6,9 @@
  */
 /dts-v1/;
 #include <dt-bindings/clock/mt8127-clk.h>
+#include <dt-bindings/gpio/gpio.h>
+#include <dt-bindings/input/input.h>
+#include <dt-bindings/pinctrl/mt8127-pinfunc.h>
 #include "mt8127.dtsi"
 
 / {
@@ -103,8 +106,9 @@
 /*
  * eMMC on MSDC0. The bootloader boots from it, so pads, clock mux/gate and the
  * VEMC/VIO18 rails are already set up; the driver gets a fixed 200 MHz source clock
- * and empty pinctrl states so nothing gets reconfigured. The MT8127 controller is
- * the MT8135-generation MSDC (no tuning/enhanced-rx features).
+ * and pin states that only select the MSDC function the bootloader already uses,
+ * so pad pulls and drive strength stay as they are. The MT8127 controller is the
+ * MT8135-generation MSDC (no tuning/enhanced-rx features).
  *
  * Speed: high-speed single data rate at 52 MHz. DDR (the stock kernel's mode) is left
  * out on purpose: with the sampling/delay settings the bootloader leaves, multi-block
@@ -143,8 +147,8 @@
 			clocks = <&msdc_clk>, <&msdc_clk>;
 			clock-names = "source", "hclk";
 			pinctrl-names = "default", "state_uhs";
-			pinctrl-0 = <>;
-			pinctrl-1 = <>;
+			pinctrl-0 = <&mmc0_pins>;
+			pinctrl-1 = <&mmc0_pins>;
 			vmmc-supply = <&reg_vemc>;
 			vqmmc-supply = <&reg_vio18>;
 			bus-width = <8>;
@@ -185,6 +189,30 @@
 
 			pmic {
 				compatible = "mediatek,mt6323";
+				interrupt-parent = <&pio>;
+				interrupts = <24 IRQ_TYPE_LEVEL_HIGH>;
+				interrupt-controller;
+				#interrupt-cells = <2>;
+
+				power-controller {
+					compatible = "mediatek,mt6323-pwrc";
+					#power-domain-cells = <0>;
+				};
+
+				rtc {
+					compatible = "mediatek,mt6323-rtc";
+				};
+
+				keys {
+					compatible = "mediatek,mt6323-keys";
+					mediatek,long-press-mode = <1>;
+					power-off-time-sec = <0>;
+
+					power {
+						linux,keycodes = <KEY_POWER>;
+						wakeup-source;
+					};
+				};
 
 				regulators {
 					compatible = "mediatek,mt6323-regulator";
@@ -195,6 +223,12 @@
 						regulator-max-microvolt = <1300000>;
 						regulator-always-on;
 						regulator-boot-on;
+					};
+
+					mt6323_vgp2_reg: ldo_vgp2 {
+						regulator-name = "vgp2";
+						regulator-min-microvolt = <2800000>;
+						regulator-max-microvolt = <2800000>;
 					};
 				};
 			};
@@ -212,6 +246,19 @@
 			compatible = "mediatek,mt8127-apmixedsys";
 			reg = <0 0x10209000 0 0x1000>;
 			#clock-cells = <1>;
+		};
+
+		/*
+		 * The bus clock: the bootloader selects MAINPLL / 4 (273 MHz) for the AXI
+		 * bus, and the I2C and DMA blocks of the pericfg run from it.
+		 */
+		axi_sel: clock-axi {
+			compatible = "fixed-factor-clock";
+			clocks = <&apmixedsys CLK_APMIXED_MAINPLL>;
+			#clock-cells = <0>;
+			clock-mult = <1>;
+			clock-div = <4>;
+			clock-output-names = "axi_sel";
 		};
 
 		infracfg: clock-controller@10001000 {
@@ -287,5 +334,101 @@
 			opp-hz = /bits/ 64 <1300000000>;
 			opp-microvolt = <1300000>;
 		};
+	};
+};
+
+/*
+ * The I2C pins already carry the I2C function when the kernel starts; the
+ * states below keep it explicit. The on-board pull-ups are used.
+ */
+&pio {
+	mmc0_pins: mmc0-pins {
+		pins {
+			pinmux = <MT8127_PIN_127_MSDC0_DAT7__FUNC_MSDC0_DAT7>,
+				 <MT8127_PIN_128_MSDC0_DAT6__FUNC_MSDC0_DAT6>,
+				 <MT8127_PIN_129_MSDC0_DAT5__FUNC_MSDC0_DAT5>,
+				 <MT8127_PIN_130_MSDC0_DAT4__FUNC_MSDC0_DAT4>,
+				 <MT8127_PIN_131_MSDC0_RSTB__FUNC_MSDC0_RSTB>,
+				 <MT8127_PIN_132_MSDC0_CMD__FUNC_MSDC0_CMD>,
+				 <MT8127_PIN_133_MSDC0_CLK__FUNC_MSDC0_CLK>,
+				 <MT8127_PIN_134_MSDC0_DAT3__FUNC_MSDC0_DAT3>,
+				 <MT8127_PIN_135_MSDC0_DAT2__FUNC_MSDC0_DAT2>,
+				 <MT8127_PIN_136_MSDC0_DAT1__FUNC_MSDC0_DAT1>,
+				 <MT8127_PIN_137_MSDC0_DAT0__FUNC_MSDC0_DAT0>;
+		};
+	};
+
+	touch_pins: touch-pins {
+		pins-irq {
+			pinmux = <MT8127_PIN_29_EINT7__FUNC_GPIO29>;
+			bias-pull-up;
+			input-enable;
+		};
+
+		pins-reset {
+			pinmux = <MT8127_PIN_45_EINT13__FUNC_GPIO45>;
+		};
+	};
+
+	i2c1_pins: i2c1-pins {
+		pins {
+			pinmux = <MT8127_PIN_57_SDA1__FUNC_SDA1>,
+				 <MT8127_PIN_58_SCL1__FUNC_SCL1>;
+			bias-disable;
+		};
+	};
+
+	i2c2_pins: i2c2-pins {
+		pins {
+			pinmux = <MT8127_PIN_77_SDA2__FUNC_SDA2>,
+				 <MT8127_PIN_78_SCL2__FUNC_SCL2>;
+			bias-disable;
+		};
+	};
+};
+
+&i2c1 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&i2c1_pins>;
+	status = "okay";
+
+	/*
+	 * The sizes are the extents of the sensor in the units the firmware reports
+	 * (not pixels): the long axis is horizontal on the landscape display. The
+	 * reset (power) line is held low by the bootloader until the driver releases
+	 * it.
+	 */
+	touchscreen@40 {
+		compatible = "silead,gsl3670";
+		reg = <0x40>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&touch_pins>;
+		interrupt-parent = <&pio>;
+		interrupts = <7 IRQ_TYPE_EDGE_RISING>;
+		power-gpios = <&pio 45 GPIO_ACTIVE_HIGH>;
+		avdd-supply = <&mt6323_vgp2_reg>;
+		firmware-name = "gsl3670-tb3-710f.fw";
+		touchscreen-size-x = <1672>;
+		touchscreen-size-y = <903>;
+		touchscreen-inverted-y;
+		silead,max-fingers = <5>;
+	};
+};
+
+&i2c2 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&i2c2_pins>;
+	status = "okay";
+
+	/*
+	 * The stock kernel polls the accelerometer, so no interrupt is described. The
+	 * mount matrix is the stock orientation 5: x' = y, y' = x, z' = -z.
+	 */
+	accelerometer@18 {
+		compatible = "bosch,bma255";
+		reg = <0x18>;
+		mount-matrix = "0", "1", "0",
+			       "1", "0", "0",
+			       "0", "0", "-1";
 	};
 };
