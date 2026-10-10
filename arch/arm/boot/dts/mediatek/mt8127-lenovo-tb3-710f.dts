@@ -547,3 +547,33 @@
 		};
 	};
 };
+
+/*
+ * Camera pipeline (sensor interface, ISP, MIPI receiver) for the out-of-tree capture module, which programs the
+ * registers directly and shares the SPM, TOPCKGEN and GPIO windows with other drivers.
+ */
+/ {
+	soc {
+		cam_proto: camera@15004000 {
+			compatible = "mediatek,mt8127-cam-proto";
+			reg = <0 0x15000000 0 0x1000>,
+			      <0 0x15004000 0 0x4000>,
+			      <0 0x15008000 0 0x1000>,
+			      <0 0x1500c000 0 0x1000>,
+			      <0 0x10010800 0 0x100>,
+			      <0 0x10006000 0 0x1000>,
+			      <0 0x10000000 0 0x1000>,
+			      <0 0x10005000 0 0x1000>;
+			reg-names = "imgsys", "isp", "seninf", "mipi-rx",
+				    "mipi-ana", "spm", "topckgen", "gpio";
+			interrupts = <GIC_SPI 143 IRQ_TYPE_LEVEL_LOW>;
+			vcama-supply = <&mt6323_vcama_reg>;
+			vcamio-supply = <&mt6323_vcamio_reg>;
+			main-reset-gpios = <&pio 53 GPIO_ACTIVE_HIGH>;
+			main-powerdown-gpios = <&pio 56 GPIO_ACTIVE_HIGH>;
+			sub-reset-gpios = <&pio 55 GPIO_ACTIVE_HIGH>;
+			sub-powerdown-gpios = <&pio 54 GPIO_ACTIVE_HIGH>;
+			i2c-bus = <&i2c0>;
+		};
+	};
+};
