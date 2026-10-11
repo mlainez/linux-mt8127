@@ -164,6 +164,7 @@ config SND_SOC_ALL_CODECS
 	imply SND_SOC_MAX9877
 	imply SND_SOC_MC13783
 	imply SND_SOC_ML26124
+	imply SND_SOC_MT6323
 	imply SND_SOC_MT6351
 	imply SND_SOC_MT6357
 	imply SND_SOC_MT6358
@@ -2673,6 +2674,15 @@ config SND_SOC_MC13783
 config SND_SOC_ML26124
 	tristate
 	depends on I2C
+
+config SND_SOC_MT6323
+	tristate "MediaTek MT6323 Codec"
+	depends on MFD_MT6397
+	help
+	  Enable support for the audio codec of the MediaTek MT6323 PMIC.
+	  It is driven by the audio front-end of the MT8127 SoC, and
+	  provides the headphone outputs and the microphone inputs of
+	  boards that use this PMIC.
 
 config SND_SOC_MT6351
 	tristate "MediaTek MT6351 Codec"
