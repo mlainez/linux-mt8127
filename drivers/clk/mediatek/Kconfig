@@ -519,6 +519,17 @@ config COMMON_CLK_MT8127_MMSYS
 	  To compile this driver as a module, choose M here: the module
 	  will be called clk-mt8127-mm.
 
+config COMMON_CLK_MT8127_VDECSYS
+	tristate "Clock driver for MediaTek MT8127 vdecsys"
+	depends on COMMON_CLK_MT8127
+	default COMMON_CLK_MT8127
+	help
+	  This driver supports the MediaTek MT8127 vdecsys clocks, which gate
+	  the video decoder and its SMI larb.
+
+	  To compile this driver as a module, choose M here: the module
+	  will be called clk-mt8127-vdec.
+
 config COMMON_CLK_MT8135
 	tristate "Clock driver for MediaTek MT8135"
 	depends on (ARCH_MEDIATEK && ARM) || COMPILE_TEST
