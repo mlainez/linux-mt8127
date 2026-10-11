@@ -25,6 +25,7 @@
 
 #define MTK_SCPD_ACTIVE_WAKEUP		BIT(0)
 #define MTK_SCPD_FWAIT_SRAM		BIT(1)
+#define MTK_SCPD_KEEP_DEFAULT_OFF	BIT(2)
 #define MTK_SCPD_CAPS(_scpd, _x)	((_scpd)->data->caps & (_x))
 
 #define SPM_VDE_PWR_CON			0x0210
@@ -528,9 +529,13 @@ static void mtk_register_power_domains(struct platform_device *pdev,
 		 * Initially turn on all domains to make the domains usable
 		 * with !CONFIG_PM and to get the hardware in sync with the
 		 * software.  The unused domains will be switched off during
-		 * late_init time.
+		 * late_init time. Domains with MTK_SCPD_KEEP_DEFAULT_OFF are
+		 * not touched and are registered as off.
 		 */
-		on = !WARN_ON(genpd->power_on(genpd) < 0);
+		if (MTK_SCPD_CAPS(scpd, MTK_SCPD_KEEP_DEFAULT_OFF))
+			on = false;
+		else
+			on = !WARN_ON(genpd->power_on(genpd) < 0);
 
 		pm_genpd_init(genpd, NULL, !on);
 	}
