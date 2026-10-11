@@ -90,12 +90,52 @@ static int gab_read_channel(struct gab *adc_bat, enum gab_chan_type channel,
 	int ret;
 
 	ret = iio_read_channel_processed(adc_bat->channel[channel], result);
-	if (ret < 0)
+	if (ret < 0) {
 		dev_err(&adc_bat->psy->dev, "read channel error: %d\n", ret);
+		return ret;
+	}
+
+	/*
+	 * IIO reports milli-units and milli-degrees Celsius; the power supply
+	 * class wants micro-units and tenths of a degree Celsius.
+	 */
+	if (channel == GAB_TEMP)
+		*result /= 100;
 	else
 		*result *= 1000;
 
 	return ret;
+}
+
+/*
+ * The capacity comes from the open circuit voltage table of the battery,
+ * looked up with the terminal voltage. The voltage drop across the internal
+ * resistance is not compensated, so the value reads low under load and high
+ * while charging.
+ */
+static int gab_get_capacity(struct gab *adc_bat, int *capacity)
+{
+	struct power_supply_battery_info *info = adc_bat->psy->battery_info;
+	int uv, temp = 250, ret;
+
+	if (!info || !info->ocv_table[0])
+		return -ENODATA;
+
+	ret = gab_read_channel(adc_bat, GAB_VOLTAGE, &uv);
+	if (ret < 0)
+		return ret;
+
+	if (adc_bat->channel[GAB_TEMP] &&
+	    gab_read_channel(adc_bat, GAB_TEMP, &temp) < 0)
+		temp = 250;
+
+	ret = power_supply_batinfo_ocv2cap(info, uv, temp / 10);
+	if (ret < 0)
+		return ret;
+
+	*capacity = clamp(ret, 0, 100);
+
+	return 0;
 }
 
 static int gab_get_property(struct power_supply *psy,
@@ -115,6 +155,8 @@ static int gab_get_property(struct power_supply *psy,
 		return gab_read_channel(adc_bat, GAB_POWER, &val->intval);
 	case POWER_SUPPLY_PROP_TEMP:
 		return gab_read_channel(adc_bat, GAB_TEMP, &val->intval);
+	case POWER_SUPPLY_PROP_CAPACITY:
+		return gab_get_capacity(adc_bat, &val->intval);
 	default:
 		return -EINVAL;
 	}
@@ -124,6 +166,7 @@ static void gab_work(struct work_struct *work)
 {
 	struct gab *adc_bat;
 	struct delayed_work *delayed_work;
+	union power_supply_propval val;
 	int status;
 
 	delayed_work = to_delayed_work(work);
@@ -134,6 +177,11 @@ static void gab_work(struct work_struct *work)
 		adc_bat->status =  POWER_SUPPLY_STATUS_DISCHARGING;
 	else if (gab_charge_finished(adc_bat))
 		adc_bat->status = POWER_SUPPLY_STATUS_NOT_CHARGING;
+	else if (!power_supply_get_property_from_supplier(adc_bat->psy,
+							  POWER_SUPPLY_PROP_STATUS,
+							  &val))
+		/* A charger knows better whether it is still charging. */
+		adc_bat->status = val.intval;
 	else
 		adc_bat->status = POWER_SUPPLY_STATUS_CHARGING;
 
@@ -183,7 +231,7 @@ static int gab_probe(struct platform_device *pdev)
 	 */
 	properties = devm_kcalloc(&pdev->dev,
 				  ARRAY_SIZE(gab_props) +
-				  ARRAY_SIZE(gab_chan_name),
+				  ARRAY_SIZE(gab_chan_name) + 1,
 				  sizeof(*properties),
 				  GFP_KERNEL);
 	if (!properties)
@@ -219,6 +267,10 @@ static int gab_probe(struct platform_device *pdev)
 	/* none of the channels are supported so let's bail out */
 	if (!any)
 		return dev_err_probe(&pdev->dev, -ENODEV, "Failed to get any ADC channel\n");
+
+	/* The capacity is derived from the voltage and the battery OCV table. */
+	if (adc_bat->channel[GAB_VOLTAGE])
+		properties[index++] = POWER_SUPPLY_PROP_CAPACITY;
 
 	/*
 	 * Total number of properties is equal to static properties

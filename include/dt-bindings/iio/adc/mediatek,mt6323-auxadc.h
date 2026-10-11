@@ -1,0 +1,13 @@
+/* SPDX-License-Identifier: GPL-2.0-only OR BSD-2-Clause */
+
+#ifndef _DT_BINDINGS_MEDIATEK_MT6323_AUXADC_H
+#define _DT_BINDINGS_MEDIATEK_MT6323_AUXADC_H
+
+/* ADC Channel Index */
+#define MT6323_AUXADC_BATSNS		0
+#define MT6323_AUXADC_ISENSE		1
+#define MT6323_AUXADC_VCDT		2
+#define MT6323_AUXADC_BATON1		3
+#define MT6323_AUXADC_THR_SENSE1	4
+
+#endif

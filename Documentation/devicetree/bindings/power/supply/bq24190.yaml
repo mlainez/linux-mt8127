@@ -42,6 +42,13 @@ properties:
       Regulator that is used to control the VBUS voltage direction for
       either USB host mode or for charging on the OTG port
 
+  input-current-limit-microamp:
+    description:
+      Maximum current to draw from the input source. Without it, the limit
+      selected by the input source detection of the charger is used.
+    minimum: 100000
+    maximum: 3000000
+
   ti,system-minimum-microvolt:
     description: |
       when power is connected and the battery is below minimum system voltage,
@@ -93,6 +100,7 @@ examples:
         interrupt-parent = <&gpiochip>;
         interrupts = <10 IRQ_TYPE_EDGE_FALLING>;
         monitored-battery = <&bat>;
+        input-current-limit-microamp = <500000>;
         ti,system-minimum-microvolt = <3200000>;
 
         usb_otg_vbus: usb-otg-vbus { };

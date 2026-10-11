@@ -7,6 +7,7 @@
 /dts-v1/;
 #include <dt-bindings/clock/mt8127-clk.h>
 #include <dt-bindings/gpio/gpio.h>
+#include <dt-bindings/iio/adc/mediatek,mt6323-auxadc.h>
 #include <dt-bindings/input/input.h>
 #include <dt-bindings/pinctrl/mt8127-pinfunc.h>
 #include "mt8127.dtsi"
@@ -634,4 +635,205 @@
 			};
 		};
 	};
+};
+
+/*
+ * The MT6323 auxiliary ADC. VCDT sees VBUS through a 330k/39k divider.
+ */
+&pwrap {
+	pmic {
+		pmic_adc: adc {
+			compatible = "mediatek,mt6323-auxadc";
+			#io-channel-cells = <1>;
+		};
+	};
+};
+
+/ {
+	vbus_sense: voltage-divider-vbus {
+		compatible = "voltage-divider";
+		io-channels = <&pmic_adc MT6323_AUXADC_VCDT>;
+		#io-channel-cells = <1>;
+		output-ohms = <39000>;
+		full-ohms = <369000>;
+	};
+};
+
+/*
+ * Battery. There is no fuel gauge or current sense resistor: the PMIC ADC measures
+ * the battery voltage on ISENSE (BATSNS is on the system rail of the charger power
+ * path) and the battery NTC on BATON1 (10k, pulled up to 1.8 V through 16.9k, 30k in
+ * parallel). The capacity is derived from the voltage alone.
+ *
+ * The design capacity is the smaller of the two stock gauge capacities at 25 degrees
+ * Celsius. The open circuit voltage tables are the stock gauge profiles of the first
+ * battery supplier, at -10, 0, 25 and 50 degrees Celsius. The charge parameters are
+ * the stock ones.
+ */
+/ {
+	battery: battery {
+		compatible = "simple-battery";
+		device-chemistry = "lithium-ion";
+		charge-full-design-microamp-hours = <3515000>;
+		voltage-min-design-microvolt = <3400000>;
+		voltage-max-design-microvolt = <4352000>;
+		precharge-current-microamp = <128000>;
+		charge-term-current-microamp = <128000>;
+		constant-charge-current-max-microamp = <960000>;
+		constant-charge-voltage-max-microvolt = <4352000>;
+		ocv-capacity-celsius = <(-10) 0 25 50>;
+		ocv-capacity-table-0 = <4333000 100  4308000 98  4287000 97  4269000 95
+					4249000 94  4232000 92  4214000 91  4197000 89
+					4180000 87  4163000 86  4145000 84  4129000 83
+					4113000 81  4096000 80  4080000 78  4064000 76
+					4048000 75  4031000 73  4012000 72  3993000 70
+					3976000 69  3962000 67  3948000 66  3934000 64
+					3921000 62  3909000 61  3897000 59  3885000 58
+					3875000 56  3865000 55  3856000 53  3847000 51
+					3839000 50  3831000 48  3824000 47  3816000 45
+					3811000 44  3804000 42  3799000 41  3793000 39
+					3788000 38  3783000 36  3778000 34  3773000 33
+					3770000 31  3766000 30  3763000 28  3758000 27
+					3754000 25  3748000 24  3741000 22  3733000 21
+					3724000 19  3714000 17  3705000 16  3699000 14
+					3693000 13  3688000 11  3683000 10  3678000 8
+					3668000 7  3641000 5  3596000 4  3560000 3
+					3549000 2  3543000 2  3538000 2  3533000 1
+					3527000 1  3522000 1  3516000 1  3510000 0
+					3504000 0  3498000 0  3400000 0>;
+		ocv-capacity-table-1 = <4337000 100  4315000 98  4296000 97  4279000 95
+					4261000 94  4243000 92  4226000 91  4209000 89
+					4192000 88  4175000 86  4158000 85  4142000 83
+					4125000 81  4110000 80  4094000 78  4078000 77
+					4064000 75  4048000 74  4031000 72  4015000 71
+					3998000 69  3982000 67  3969000 66  3954000 64
+					3940000 63  3926000 61  3913000 60  3900000 58
+					3889000 57  3878000 55  3868000 54  3860000 52
+					3851000 50  3844000 49  3837000 47  3829000 46
+					3823000 44  3817000 43  3812000 41  3807000 40
+					3801000 38  3796000 37  3792000 35  3787000 33
+					3784000 32  3779000 30  3776000 29  3773000 27
+					3769000 26  3765000 24  3759000 23  3752000 21
+					3742000 19  3732000 18  3720000 16  3711000 15
+					3704000 13  3700000 12  3697000 10  3692000 9
+					3688000 7  3680000 6  3655000 4  3606000 2
+					3545000 1  3448000 0  3400000 0>;
+		ocv-capacity-table-2 = <4333000 100  4312000 98  4294000 97  4276000 95
+					4258000 94  4241000 92  4224000 91  4207000 89
+					4190000 88  4174000 86  4157000 85  4141000 83
+					4126000 82  4110000 80  4095000 79  4080000 77
+					4065000 76  4051000 74  4037000 73  4022000 71
+					4009000 70  3996000 68  3984000 67  3972000 65
+					3963000 64  3951000 62  3940000 61  3928000 59
+					3913000 58  3897000 56  3881000 55  3867000 53
+					3856000 52  3846000 50  3838000 49  3830000 47
+					3824000 46  3818000 44  3811000 43  3806000 41
+					3801000 40  3797000 38  3792000 37  3787000 35
+					3784000 34  3780000 32  3776000 31  3773000 29
+					3771000 28  3768000 26  3764000 25  3760000 23
+					3753000 22  3748000 20  3741000 19  3733000 17
+					3721000 16  3710000 14  3695000 13  3687000 11
+					3684000 10  3682000 8  3680000 7  3676000 5
+					3663000 4  3605000 2  3513000 1  3400000 0>;
+		ocv-capacity-table-3 = <4323000 100  4301000 98  4282000 97  4265000 95
+					4247000 94  4230000 92  4213000 91  4195000 89
+					4179000 88  4163000 86  4147000 85  4130000 83
+					4115000 82  4098000 80  4083000 79  4067000 77
+					4052000 76  4038000 74  4024000 73  4010000 71
+					3997000 70  3984000 68  3971000 67  3962000 65
+					3950000 64  3939000 62  3929000 61  3918000 59
+					3906000 58  3892000 56  3874000 55  3857000 53
+					3846000 51  3837000 50  3828000 48  3821000 47
+					3814000 45  3808000 44  3802000 42  3796000 41
+					3790000 39  3786000 38  3780000 36  3776000 35
+					3772000 33  3768000 32  3765000 30  3759000 29
+					3749000 27  3741000 26  3737000 24  3731000 23
+					3725000 21  3718000 20  3711000 18  3703000 17
+					3689000 15  3676000 14  3663000 12  3659000 11
+					3658000 9  3656000 8  3651000 6  3643000 5
+					3597000 3  3521000 2  3400000 0>;
+	};
+
+	/* NTC voltage to temperature, from the stock 10k thermistor table and divider. */
+	battery_ntc: thermal-sensor-battery {
+		compatible = "generic-adc-thermal";
+		#thermal-sensor-cells = <0>;
+		#io-channel-cells = <0>;
+		io-channels = <&pmic_adc MT6323_AUXADC_BATON1>;
+		io-channel-names = "sensor-channel";
+		temperature-lookup-table = <
+			(-20000) 997
+			(-15000) 961
+			(-10000) 921
+			(-5000) 876
+			0 827
+			5000 774
+			10000 720
+			15000 664
+			20000 608
+			25000 553
+			30000 500
+			35000 450
+			40000 403
+			45000 359
+			50000 320
+			55000 283
+			60000 251>;
+	};
+
+	thermal-zones {
+		battery-thermal {
+			polling-delay = <0>;
+			polling-delay-passive = <0>;
+			thermal-sensors = <&battery_ntc>;
+		};
+	};
+
+	fuel_gauge: fuel-gauge {
+		compatible = "adc-battery";
+		io-channels = <&pmic_adc MT6323_AUXADC_ISENSE>, <&battery_ntc>;
+		io-channel-names = "voltage", "temperature";
+		monitored-battery = <&battery>;
+	};
+};
+
+/*
+ * BQ24296 charger. It powers the system and charges the battery with the parameters
+ * of the monitored battery, and a 3.5 V minimum system voltage like the stock kernel.
+ * It sets its input current limit from its PSEL/OTG pins, which can give 100 mA on a
+ * USB host port; 500 mA is restored whenever a source is identified. EINT11 is the
+ * charger status interrupt of the stock pin configuration; CE (GPIO32) is active low.
+ */
+&pio {
+	charger_pins: charger-pins {
+		pins-int {
+			pinmux = <MT8127_PIN_43_EINT11__FUNC_GPIO43>;
+			bias-pull-up;
+			input-enable;
+		};
+
+		pins-ce {
+			pinmux = <MT8127_PIN_32_EINT10__FUNC_GPIO32>;
+		};
+	};
+};
+
+&i2c2 {
+	charger: charger@6b {
+		compatible = "ti,bq24296";
+		reg = <0x6b>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&charger_pins>;
+		interrupt-parent = <&pio>;
+		interrupts = <11 IRQ_TYPE_EDGE_FALLING>;
+		ce-gpios = <&pio 32 GPIO_ACTIVE_LOW>;
+		monitored-battery = <&battery>;
+		input-current-limit-microamp = <500000>;
+		ti,system-minimum-microvolt = <3500000>;
+		omit-battery-class;
+	};
+};
+
+&fuel_gauge {
+	power-supplies = <&charger>;
 };
