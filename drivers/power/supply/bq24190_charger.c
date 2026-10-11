@@ -236,6 +236,7 @@ struct bq24190_dev_info {
 	u16				sys_min;
 	u16				iprechg;
 	u16				iterm;
+	u32				iinlim;
 	u32				ichg;
 	u32				ichg_max;
 	u32				vreg;
@@ -747,6 +748,16 @@ static int bq24190_register_vbus_regulator(struct bq24190_dev_info *bdi)
 }
 #endif
 
+static int bq24190_set_iinlim(struct bq24190_dev_info *bdi, int iinlim)
+{
+	return bq24190_set_field_val(bdi, BQ24190_REG_ISC,
+				     BQ24190_REG_ISC_IINLIM_MASK,
+				     BQ24190_REG_ISC_IINLIM_SHIFT,
+				     bq24190_isc_iinlim_values,
+				     ARRAY_SIZE(bq24190_isc_iinlim_values),
+				     iinlim);
+}
+
 static int bq24190_set_config(struct bq24190_dev_info *bdi)
 {
 	int ret;
@@ -821,6 +832,12 @@ static int bq24190_set_config(struct bq24190_dev_info *bdi)
 					    bq24190_cvc_vreg_values,
 					    ARRAY_SIZE(bq24190_cvc_vreg_values),
 					    bdi->vreg);
+		if (ret < 0)
+			return ret;
+	}
+
+	if (bdi->iinlim) {
+		ret = bq24190_set_iinlim(bdi, bdi->iinlim);
 		if (ret < 0)
 			return ret;
 	}
@@ -1296,11 +1313,17 @@ static int bq24190_charger_get_iinlimit(struct bq24190_dev_info *bdi,
 static int bq24190_charger_set_iinlimit(struct bq24190_dev_info *bdi,
 		const union power_supply_propval *val)
 {
-	return bq24190_set_field_val(bdi, BQ24190_REG_ISC,
-			BQ24190_REG_ISC_IINLIM_MASK,
-			BQ24190_REG_ISC_IINLIM_SHIFT,
-			bq24190_isc_iinlim_values,
-			ARRAY_SIZE(bq24190_isc_iinlim_values), val->intval);
+	int ret;
+
+	ret = bq24190_set_iinlim(bdi, val->intval);
+	if (ret < 0)
+		return ret;
+
+	/* A configured limit follows the last request across source changes. */
+	if (bdi->iinlim)
+		bdi->iinlim = val->intval;
+
+	return 0;
 }
 
 static int bq24190_charger_get_property(struct power_supply *psy,
@@ -1823,6 +1846,19 @@ static void bq24190_check_status(struct bq24190_dev_info *bdi)
 					ret);
 		}
 
+		/*
+		 * The charger sets its own input current limit once it has
+		 * identified a new source: replace it with the configured one.
+		 */
+		if (bdi->iinlim &&
+		    !(bdi->ss_reg & BQ24190_REG_SS_VBUS_STAT_MASK) &&
+		    (ss_reg & BQ24190_REG_SS_VBUS_STAT_MASK)) {
+			ret = bq24190_set_iinlim(bdi, bdi->iinlim);
+			if (ret < 0)
+				dev_err(bdi->dev, "Can't set input current limit: %d\n",
+					ret);
+		}
+
 		if ((bdi->ss_reg & battery_mask_ss) != (ss_reg & battery_mask_ss))
 			alert_battery = true;
 		if ((bdi->ss_reg & ~battery_mask_ss) != (ss_reg & ~battery_mask_ss))
@@ -1946,6 +1982,16 @@ static int bq24190_get_config(struct bq24190_dev_info *bdi)
 			bdi->sys_min = v;
 		else
 			dev_warn(bdi->dev, "invalid value for %s: %u\n", s, v);
+	}
+
+	if (device_property_read_u32(bdi->dev, "input-current-limit-microamp",
+				     &v) == 0) {
+		if (v >= bq24190_isc_iinlim_values[0] &&
+		    v <= bq24190_isc_iinlim_values[ARRAY_SIZE(bq24190_isc_iinlim_values) - 1])
+			bdi->iinlim = v;
+		else
+			dev_warn(bdi->dev, "invalid value for input-current-limit-microamp: %d\n",
+				 v);
 	}
 
 	if (!power_supply_get_battery_info(bdi->charger, &info)) {
