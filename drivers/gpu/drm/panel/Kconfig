@@ -175,6 +175,17 @@ config DRM_PANEL_HIMAX_HX8279
 	  7.0" 1200x1920 IPS LCD panel that uses a MIPI-DSI interface
 	  and others.
 
+config DRM_PANEL_HIMAX_HX8282
+	tristate "Himax HX8282-based LVDS panels"
+	depends on OF
+	depends on BACKLIGHT_CLASS_DEVICE
+	select VIDEOMODE_HELPERS
+	help
+	  Say Y if you want to enable support for LVDS panels driven by the
+	  Himax HX8282 timing controller, such as the 7" 1024x600 panel of the
+	  Lenovo Tab3 7 Essential (TB3-710F). The panel timings come from the
+	  device tree.
+
 config DRM_PANEL_HIMAX_HX83102
 	tristate "Himax HX83102-based panels"
 	depends on OF

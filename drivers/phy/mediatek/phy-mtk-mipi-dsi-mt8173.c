@@ -284,6 +284,13 @@ const struct mtk_mipitx_data mt2701_mipitx_data = {
 	.mipi_tx_disable_signal = mtk_mipi_tx_power_off_signal,
 };
 
+const struct mtk_mipitx_data mt8127_mipitx_data = {
+	.mppll_preserve = 7,
+	.mipi_tx_clk_ops = &mtk_mipi_tx_pll_ops,
+	.mipi_tx_enable_signal = mtk_mipi_tx_power_on_signal,
+	.mipi_tx_disable_signal = mtk_mipi_tx_power_off_signal,
+};
+
 const struct mtk_mipitx_data mt8173_mipitx_data = {
 	.mppll_preserve = 0,
 	.mipi_tx_clk_ops = &mtk_mipi_tx_pll_ops,

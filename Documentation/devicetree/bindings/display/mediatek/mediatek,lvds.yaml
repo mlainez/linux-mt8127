@@ -1,0 +1,114 @@
+# SPDX-License-Identifier: (GPL-2.0-only OR BSD-2-Clause)
+%YAML 1.2
+---
+$id: http://devicetree.org/schemas/display/mediatek/mediatek,lvds.yaml#
+$schema: http://devicetree.org/meta-schemas/core.yaml#
+
+title: MediaTek LVDS Transmitter
+
+maintainers:
+  - Marc Lainez <marc.lainez@gmail.com>
+
+description:
+  The LVDS transmitter serializes the parallel RGB output of DPI0 on one
+  LVDS link. Its PLL is fed by the MIPI TX PLL and also generates the DPI0
+  pixel clock. The transmitter is made of a digital block in the display
+  subsystem and an analog block next to the MIPI TX.
+
+properties:
+  compatible:
+    const: mediatek,mt8127-lvds
+
+  reg:
+    items:
+      - description: LVDS TX digital registers
+      - description: LVDS TX analog and LVDS PLL registers
+
+  reg-names:
+    items:
+      - const: tx
+      - const: ana
+
+  clocks:
+    items:
+      - description: LVDS pixel clock gate
+      - description: LVDS CTS clock gate
+      - description: MIPI TX PLL feeding the LVDS PLL
+
+  clock-names:
+    items:
+      - const: pixel
+      - const: cts
+      - const: pll
+
+  power-domains:
+    maxItems: 1
+
+  mediatek,mmsys:
+    $ref: /schemas/types.yaml#/definitions/phandle
+    description: The MMSYS_CONFIG system controller, which gates the LVDS
+      output.
+
+  ports:
+    $ref: /schemas/graph.yaml#/properties/ports
+
+    properties:
+      port@0:
+        $ref: /schemas/graph.yaml#/properties/port
+        description: Parallel RGB input from DPI0
+
+      port@1:
+        $ref: /schemas/graph.yaml#/properties/port
+        description: LVDS output to a panel or bridge
+
+    required:
+      - port@0
+      - port@1
+
+required:
+  - compatible
+  - reg
+  - reg-names
+  - clocks
+  - clock-names
+  - mediatek,mmsys
+  - ports
+
+additionalProperties: false
+
+examples:
+  - |
+    soc {
+        #address-cells = <2>;
+        #size-cells = <2>;
+
+        lvds@14016000 {
+            compatible = "mediatek,mt8127-lvds";
+            reg = <0 0x14016000 0 0x1000>, <0 0x10010400 0 0x100>;
+            reg-names = "tx", "ana";
+            clocks = <&mmsys 34>, <&mmsys 35>, <&mipi_tx0>;
+            clock-names = "pixel", "cts", "pll";
+            mediatek,mmsys = <&mmsys>;
+
+            ports {
+                #address-cells = <1>;
+                #size-cells = <0>;
+
+                port@0 {
+                    reg = <0>;
+
+                    lvds_in: endpoint {
+                        remote-endpoint = <&dpi0_out>;
+                    };
+                };
+
+                port@1 {
+                    reg = <1>;
+
+                    lvds_out: endpoint {
+                        remote-endpoint = <&panel_in>;
+                    };
+                };
+            };
+        };
+    };

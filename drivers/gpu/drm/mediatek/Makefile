@@ -15,6 +15,7 @@ mediatek-drm-y := mtk_crtc.o \
 		  mtk_dpi.o \
 		  mtk_ethdr.o \
 		  mtk_gem.o \
+		  mtk_lvds.o \
 		  mtk_mdp_rdma.o \
 		  mtk_padding.o \
 		  mtk_plane.o

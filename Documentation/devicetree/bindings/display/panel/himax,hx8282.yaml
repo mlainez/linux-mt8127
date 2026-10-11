@@ -1,0 +1,95 @@
+# SPDX-License-Identifier: (GPL-2.0-only OR BSD-2-Clause)
+%YAML 1.2
+---
+$id: http://devicetree.org/schemas/display/panel/himax,hx8282.yaml#
+$schema: http://devicetree.org/meta-schemas/core.yaml#
+
+title: Himax HX8282 based LVDS panels
+
+maintainers:
+  - Marc Lainez <marc.lainez@gmail.com>
+
+description:
+  The Himax HX8282 is a timing controller and source driver with an LVDS
+  input for 1024x600 TFT panels. It is configured by straps on the panel and
+  needs no register setup, so the panel timings are given by the
+  panel-timing node.
+
+allOf:
+  - $ref: panel-common.yaml#
+  - $ref: /schemas/display/lvds.yaml#
+
+properties:
+  compatible:
+    items:
+      - enum:
+          # Lenovo Tab3 7 Essential (TB3-710F) 7" WSVGA (1024x600) panel
+          - lenovo,tb3-710f-panel
+      - const: himax,hx8282
+
+  iovcc-supply:
+    description: Logic supply of the HX8282
+
+  vdd-supply:
+    description: Panel power supply
+
+  reset-gpios:
+    maxItems: 1
+
+  standby-gpios:
+    maxItems: 1
+    description: GPIO connected to the STBYB input (active low)
+
+  enable-gpios:
+    maxItems: 1
+    description: GPIO enabling the panel power stage
+
+required:
+  - compatible
+  - iovcc-supply
+  - vdd-supply
+  - reset-gpios
+  - standby-gpios
+  - enable-gpios
+  - data-mapping
+  - width-mm
+  - height-mm
+  - panel-timing
+  - port
+
+unevaluatedProperties: false
+
+examples:
+  - |
+    #include <dt-bindings/gpio/gpio.h>
+
+    panel {
+        compatible = "lenovo,tb3-710f-panel", "himax,hx8282";
+        iovcc-supply = <&vgp1>;
+        vdd-supply = <&lcd_3v3>;
+        reset-gpios = <&pio 89 GPIO_ACTIVE_LOW>;
+        standby-gpios = <&pio 88 GPIO_ACTIVE_LOW>;
+        enable-gpios = <&pio 44 GPIO_ACTIVE_HIGH>;
+        backlight = <&backlight>;
+        data-mapping = "vesa-24";
+        width-mm = <154>;
+        height-mm = <86>;
+
+        panel-timing {
+            clock-frequency = <52000000>;
+            hactive = <1024>;
+            vactive = <600>;
+            hfront-porch = <160>;
+            hback-porch = <160>;
+            hsync-len = <10>;
+            vfront-porch = <12>;
+            vback-porch = <23>;
+            vsync-len = <10>;
+        };
+
+        port {
+            panel_in: endpoint {
+                remote-endpoint = <&lvds_out>;
+            };
+        };
+    };

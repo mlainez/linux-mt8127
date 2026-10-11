@@ -53,6 +53,8 @@
 				 <&mmsys CLK_MM_LVDS_PIXEL>,
 				 <&mmsys CLK_MM_LVDS_CTS>;
 			power-domains = <&scpsys MT8127_POWER_DOMAIN_DISP>;
+			iovcc-supply = <&mt6323_vgp1_reg>;
+			vdd-supply = <&reg_lcd_3v3>;
 		};
 	};
 
@@ -205,13 +207,6 @@
  * were enabled by the bootloader and have no consumer in this tree yet.
  */
 / {
-	clk26m: oscillator-26m {
-		compatible = "fixed-clock";
-		#clock-cells = <0>;
-		clock-frequency = <26000000>;
-		clock-output-names = "clk26m";
-	};
-
 	soc {
 		pwrap: pwrap@1000d000 {
 			compatible = "mediatek,mt8127-pwrap";
@@ -293,6 +288,14 @@
 						regulator-name = "vcamio";
 						regulator-min-microvolt = <1800000>;
 						regulator-max-microvolt = <1800000>;
+					};
+
+					/* HX8282 logic supply, left on by the bootloader */
+					mt6323_vgp1_reg: ldo_vgp1 {
+						regulator-name = "vgp1";
+						regulator-min-microvolt = <2800000>;
+						regulator-max-microvolt = <2800000>;
+						regulator-boot-on;
 					};
 
 					mt6323_vgp2_reg: ldo_vgp2 {
@@ -886,5 +889,106 @@
 		hp-det-gpios = <&pio 26 GPIO_ACTIVE_LOW>;
 		pinctrl-names = "default";
 		pinctrl-0 = <&aud_pins>, <&sound_pins>;
+	};
+};
+
+/*
+ * Display: OVL -> RDMA0 -> COLOR -> BLS -> DPI0 -> LVDS -> 7" 1024x600 panel
+ * driven by a Himax HX8282. The bootloader leaves the whole path running; the
+ * simple-framebuffer above keeps its clocks and supplies on until the DRM
+ * driver takes over. Timings and the power sequence are those of the stock
+ * hx8282_a01_lvds_dpi_vdo LCM driver; the sync polarities match the DPI
+ * registers it programs.
+ *
+ * The backlight is dimmed by the BLS PWM on the DISP_PWM pin; the stock kernel
+ * runs it at 26 MHz / 1024 (25.4 kHz).
+ */
+/ {
+	backlight: backlight {
+		compatible = "pwm-backlight";
+		pwms = <&bls 0 39385>;
+		brightness-levels = <0 1023>;
+		num-interpolated-steps = <1023>;
+		default-brightness-level = <512>;
+	};
+
+	/* Load switch of the panel 3.3 V supply */
+	reg_lcd_3v3: regulator-lcd-3v3 {
+		compatible = "regulator-fixed";
+		regulator-name = "lcd_3v3";
+		regulator-min-microvolt = <3300000>;
+		regulator-max-microvolt = <3300000>;
+		gpio = <&pio 83 GPIO_ACTIVE_HIGH>;
+		enable-active-high;
+		regulator-boot-on;
+	};
+
+	panel {
+		compatible = "lenovo,tb3-710f-panel", "himax,hx8282";
+		iovcc-supply = <&mt6323_vgp1_reg>;
+		vdd-supply = <&reg_lcd_3v3>;
+		reset-gpios = <&pio 89 GPIO_ACTIVE_LOW>;
+		standby-gpios = <&pio 88 GPIO_ACTIVE_LOW>;
+		enable-gpios = <&pio 44 GPIO_ACTIVE_HIGH>;
+		backlight = <&backlight>;
+		data-mapping = "vesa-24";
+		width-mm = <154>;
+		height-mm = <86>;
+		/* Landscape panel in a portrait tablet (stock ro.sf.hwrotation=270) */
+		rotation = <270>;
+
+		panel-timing {
+			clock-frequency = <52000000>;
+			hactive = <1024>;
+			vactive = <600>;
+			hfront-porch = <160>;
+			hback-porch = <160>;
+			hsync-len = <10>;
+			vfront-porch = <12>;
+			vback-porch = <23>;
+			vsync-len = <10>;
+			hsync-active = <1>;
+			vsync-active = <1>;
+		};
+
+		port {
+			panel_in: endpoint {
+				remote-endpoint = <&lvds_out>;
+			};
+		};
+	};
+};
+
+&bls {
+	pinctrl-names = "default";
+	pinctrl-0 = <&disp_pwm_pins>;
+	status = "okay";
+};
+
+&dpi0 {
+	status = "okay";
+};
+
+&lvds {
+	status = "okay";
+
+	ports {
+		port@1 {
+			lvds_out: endpoint {
+				remote-endpoint = <&panel_in>;
+			};
+		};
+	};
+};
+
+&mipi_tx0 {
+	status = "okay";
+};
+
+&pio {
+	disp_pwm_pins: disp-pwm-pins {
+		pins {
+			pinmux = <MT8127_PIN_59_DISP_PWM__FUNC_DISP_PWM>;
+		};
 	};
 };

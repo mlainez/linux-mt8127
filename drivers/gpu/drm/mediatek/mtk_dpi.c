@@ -146,8 +146,9 @@ struct mtk_dpi_factor {
  *		     If present, implies that the feature must be enabled.
  * @pixels_per_iter: Quantity of transferred pixels per iteration.
  * @edge_cfg_in_mmsys: If the edge configuration for DPI's output needs to be set in MMSYS.
- * @clocked_by_hdmi: HDMI IP outputs clock to dpi_pixel_clk input clock, needed
- *		     for DPI registers access.
+ * @clocked_by_encoder: The encoder fed by the DPI (HDMI or LVDS TX) outputs the
+ *		        clock to the dpi_pixel_clk input clock, needed for DPI
+ *		        registers access.
  * @output_1pixel: Enable outputting one pixel per round; if the input is two pixel per
  *                 round, the DPI hardware will internally transform it to 1T1P.
  */
@@ -170,7 +171,7 @@ struct mtk_dpi_conf {
 	u32 input_2p_en_bit;
 	u32 pixels_per_iter;
 	bool edge_cfg_in_mmsys;
-	bool clocked_by_hdmi;
+	bool clocked_by_encoder;
 	bool output_1pixel;
 };
 
@@ -612,7 +613,7 @@ static int mtk_dpi_set_display_mode(struct mtk_dpi *dpi,
 
 	drm_display_mode_to_videomode(mode, &vm);
 
-	if (!dpi->conf->clocked_by_hdmi)
+	if (!dpi->conf->clocked_by_encoder)
 		mtk_dpi_set_pixel_clk(dpi, &vm, mode->clock);
 
 	dpi_pol.ck_pol = MTK_DPI_POLARITY_FALLING;
@@ -997,7 +998,7 @@ void mtk_dpi_start(struct device *dev)
 {
 	struct mtk_dpi *dpi = dev_get_drvdata(dev);
 
-	if (!dpi->conf->clocked_by_hdmi)
+	if (!dpi->conf->clocked_by_encoder)
 		mtk_dpi_power_on(dpi);
 }
 
@@ -1005,7 +1006,7 @@ void mtk_dpi_stop(struct device *dev)
 {
 	struct mtk_dpi *dpi = dev_get_drvdata(dev);
 
-	if (!dpi->conf->clocked_by_hdmi)
+	if (!dpi->conf->clocked_by_encoder)
 		mtk_dpi_power_off(dpi);
 }
 
@@ -1158,6 +1159,24 @@ static const struct mtk_dpi_conf mt2701_conf = {
 	.csc_enable_bit = CSC_ENABLE,
 };
 
+static const struct mtk_dpi_conf mt8127_conf = {
+	.reg_h_fre_con = 0xb0,
+	.edge_sel_en = true,
+	.max_clock_khz = 150000,
+	.output_fmts = mt8173_output_fmts,
+	.num_output_fmts = ARRAY_SIZE(mt8173_output_fmts),
+	.pixels_per_iter = 1,
+	.is_ck_de_pol = true,
+	.swap_input_support = true,
+	.support_direct_pin = true,
+	.dimension_mask = HPW_MASK,
+	.hvsize_mask = HSIZE_MASK,
+	.channel_swap_shift = CH_SWAP,
+	.yuv422_en_bit = YUV422_EN,
+	.csc_enable_bit = CSC_ENABLE,
+	.clocked_by_encoder = true,
+};
+
 static const struct mtk_dpi_conf mt8183_conf = {
 	.dpi_factor = dpi_factor_mt8183,
 	.num_dpi_factor = ARRAY_SIZE(dpi_factor_mt8183),
@@ -1227,7 +1246,7 @@ static const struct mtk_dpi_conf mt8195_conf = {
 	.yuv422_en_bit = YUV422_EN,
 	.csc_enable_bit = CSC_ENABLE,
 	.input_2p_en_bit = DPI_INPUT_2P_EN,
-	.clocked_by_hdmi = true,
+	.clocked_by_encoder = true,
 	.output_1pixel = true,
 };
 
@@ -1337,6 +1356,7 @@ static void mtk_dpi_remove(struct platform_device *pdev)
 
 static const struct of_device_id mtk_dpi_of_ids[] = {
 	{ .compatible = "mediatek,mt2701-dpi", .data = &mt2701_conf },
+	{ .compatible = "mediatek,mt8127-dpi", .data = &mt8127_conf },
 	{ .compatible = "mediatek,mt8173-dpi", .data = &mt8173_conf },
 	{ .compatible = "mediatek,mt8183-dpi", .data = &mt8183_conf },
 	{ .compatible = "mediatek,mt8186-dpi", .data = &mt8186_conf },
