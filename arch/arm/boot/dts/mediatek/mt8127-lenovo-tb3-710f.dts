@@ -796,3 +796,44 @@
 		monitored-battery = <&battery>;
 	};
 };
+
+/*
+ * BQ24296 charger. It powers the system and charges the battery with the parameters
+ * of the monitored battery, and a 3.5 V minimum system voltage like the stock kernel.
+ * It sets its input current limit from its PSEL/OTG pins, which can give 100 mA on a
+ * USB host port; 500 mA is restored whenever a source is identified. EINT11 is the
+ * charger status interrupt of the stock pin configuration; CE (GPIO32) is active low.
+ */
+&pio {
+	charger_pins: charger-pins {
+		pins-int {
+			pinmux = <MT8127_PIN_43_EINT11__FUNC_GPIO43>;
+			bias-pull-up;
+			input-enable;
+		};
+
+		pins-ce {
+			pinmux = <MT8127_PIN_32_EINT10__FUNC_GPIO32>;
+		};
+	};
+};
+
+&i2c2 {
+	charger: charger@6b {
+		compatible = "ti,bq24296";
+		reg = <0x6b>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&charger_pins>;
+		interrupt-parent = <&pio>;
+		interrupts = <11 IRQ_TYPE_EDGE_FALLING>;
+		ce-gpios = <&pio 32 GPIO_ACTIVE_LOW>;
+		monitored-battery = <&battery>;
+		input-current-limit-microamp = <500000>;
+		ti,system-minimum-microvolt = <3500000>;
+		omit-battery-class;
+	};
+};
+
+&fuel_gauge {
+	power-supplies = <&charger>;
+};
