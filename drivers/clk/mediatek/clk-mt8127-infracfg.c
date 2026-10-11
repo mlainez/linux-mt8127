@@ -38,13 +38,16 @@ static const struct mtk_gate_regs infra_cg_regs = {
 	GATE_MTK_FLAGS(_id, _name, _parent, &infra_cg_regs, _shift,	\
 		       &mtk_clk_gate_ops_setclr, _flags)
 
-/* The PMIC wrapper must keep running: the CPU supply sits behind it. */
+/*
+ * The PMIC wrapper must keep running: the CPU supply sits behind it. SMI and M4U carry the display and GPU memory
+ * traffic and have no driver; CONNMCU clocks the CONSYS bus, which its driver accesses without the clock framework.
+ */
 static const struct mtk_gate infra_clks[] = {
-	GATE_ICG(CLK_INFRA_SMI, "infra_smi", "mm_sel", 1),
+	GATE_ICG_FLAGS(CLK_INFRA_SMI, "infra_smi", "mm_sel", 1, CLK_IS_CRITICAL),
 	GATE_ICG(CLK_INFRA_AUDIO, "infra_audio", "aud_intbus_sel", 5),
 	GATE_ICG(CLK_INFRA_EFUSE, "infra_efuse", "axi_sel", 6),
-	GATE_ICG(CLK_INFRA_M4U, "infra_m4u", "mm_sel", 8),
-	GATE_ICG(CLK_INFRA_CONNMCU, "infra_connmcu", "axi_sel", 12),
+	GATE_ICG_FLAGS(CLK_INFRA_M4U, "infra_m4u", "mm_sel", 8, CLK_IS_CRITICAL),
+	GATE_ICG_FLAGS(CLK_INFRA_CONNMCU, "infra_connmcu", "axi_sel", 12, CLK_IS_CRITICAL),
 	GATE_ICG(CLK_INFRA_TRNG, "infra_trng", "axi_sel", 13),
 	GATE_ICG(CLK_INFRA_KP, "infra_kp", "axi_sel", 16),
 	GATE_ICG(CLK_INFRA_CEC, "infra_cec", "clk26m", 18),

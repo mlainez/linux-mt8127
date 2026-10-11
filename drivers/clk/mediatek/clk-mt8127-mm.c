@@ -27,13 +27,21 @@ static const struct mtk_gate_regs disp1_cg_regs = {
 #define GATE_DISP0(_id, _name, _parent, _shift)				\
 	GATE_MTK(_id, _name, _parent, &disp0_cg_regs, _shift, &mtk_clk_gate_ops_setclr)
 
+#define GATE_DISP0_FLAGS(_id, _name, _parent, _shift, _flags)		\
+	GATE_MTK_FLAGS(_id, _name, _parent, &disp0_cg_regs, _shift,	\
+		       &mtk_clk_gate_ops_setclr, _flags)
+
 #define GATE_DISP1(_id, _name, _parent, _shift)				\
 	GATE_MTK(_id, _name, _parent, &disp1_cg_regs, _shift, &mtk_clk_gate_ops_setclr)
 
+/*
+ * The SMI common and larb0 gates carry the display and GPU memory traffic and have no driver. The display mutex
+ * driver only takes the MUTEX clock, while the mutex also runs from MUTEX_32K.
+ */
 static const struct mtk_gate mm_clks[] = {
 	/* DISP_CG_CON0 */
-	GATE_DISP0(CLK_MM_SMI_COMMON, "mm_smi_common", "mm_sel", 0),
-	GATE_DISP0(CLK_MM_SMI_LARB0, "mm_smi_larb0", "mm_sel", 1),
+	GATE_DISP0_FLAGS(CLK_MM_SMI_COMMON, "mm_smi_common", "mm_sel", 0, CLK_IS_CRITICAL),
+	GATE_DISP0_FLAGS(CLK_MM_SMI_LARB0, "mm_smi_larb0", "mm_sel", 1, CLK_IS_CRITICAL),
 	GATE_DISP0(CLK_MM_CMDQ, "mm_cmdq", "mm_sel", 2),
 	GATE_DISP0(CLK_MM_MUTEX, "mm_mutex", "mm_sel", 3),
 	GATE_DISP0(CLK_MM_DISP_COLOR, "mm_disp_color", "mm_sel", 4),
@@ -50,7 +58,7 @@ static const struct mtk_gate mm_clks[] = {
 	GATE_DISP0(CLK_MM_MDP_BLS_26M, "mm_mdp_bls_26m", "pwm_sel", 15),
 	GATE_DISP0(CLK_MM_CAM_MDP, "mm_cam_mdp", "mm_sel", 16),
 	GATE_DISP0(CLK_MM_FAKE_ENG, "mm_fake_eng", "mm_sel", 17),
-	GATE_DISP0(CLK_MM_MUTEX_32K, "mm_mutex_32k", "rtc_sel", 18),
+	GATE_DISP0_FLAGS(CLK_MM_MUTEX_32K, "mm_mutex_32k", "rtc_sel", 18, CLK_IS_CRITICAL),
 	GATE_DISP0(CLK_MM_DISP_RDMA1, "mm_disp_rdma1", "mm_sel", 19),
 	GATE_DISP0(CLK_MM_DISP_UFOE, "mm_disp_ufoe", "mm_sel", 20),
 	/* DISP_CG_CON1 */
