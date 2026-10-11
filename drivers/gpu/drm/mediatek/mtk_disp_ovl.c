@@ -13,6 +13,7 @@
 #include <linux/of.h>
 #include <linux/platform_device.h>
 #include <linux/pm_runtime.h>
+#include <linux/reset.h>
 #include <linux/soc/mediatek/mtk-cmdq.h>
 
 #include "mtk_crtc.h"
@@ -25,6 +26,10 @@
 #define DISP_REG_OVL_INTSTA			0x0008
 #define DISP_REG_OVL_EN				0x000c
 #define DISP_REG_OVL_RST			0x0014
+#define DISP_REG_OVL_FLOW_CTRL_DBG		0x0240
+#define OVL_FLOW_CTRL_STATE				GENMASK(9, 0)
+#define OVL_FLOW_CTRL_IDLE				0x001
+#define OVL_FLOW_CTRL_WAIT				0x002
 #define DISP_REG_OVL_ROI_SIZE			0x0020
 #define DISP_REG_OVL_DATAPATH_CON		0x0024
 #define OVL_LAYER_SMI_ID_EN				BIT(0)
@@ -172,6 +177,7 @@ struct mtk_disp_ovl {
 	const struct mtk_disp_ovl_data	*data;
 	void				(*vblank_cb)(void *data);
 	void				*vblank_cb_data;
+	struct reset_control		*rst;
 };
 
 static irqreturn_t mtk_disp_ovl_irq_handler(int irq, void *dev_id)
@@ -250,11 +256,42 @@ bool mtk_ovl_is_afbc_supported(struct device *dev)
 	return ovl->data->supports_afbc;
 }
 
+/*
+ * An OVL stopped in the middle of a frame, such as one still scanning out the
+ * bootloader framebuffer when the pipeline is reprogrammed, can stay stuck in
+ * a state its soft reset does not leave. Only the MMSYS reset recovers it; that
+ * clears all OVL registers, which the CRTC enable programs afterwards.
+ */
+static void mtk_ovl_recover(struct mtk_disp_ovl *ovl, struct device *dev)
+{
+	u32 state;
+
+	writel(0x1, ovl->regs + DISP_REG_OVL_RST);
+	writel(0x0, ovl->regs + DISP_REG_OVL_RST);
+
+	state = readl(ovl->regs + DISP_REG_OVL_FLOW_CTRL_DBG) &
+		OVL_FLOW_CTRL_STATE;
+	if (state == OVL_FLOW_CTRL_IDLE || state == OVL_FLOW_CTRL_WAIT)
+		return;
+
+	dev_warn(dev, "stuck in flow state 0x%03x, resetting\n", state);
+	if (reset_control_reset(ovl->rst))
+		dev_err(dev, "MMSYS reset failed\n");
+}
+
 int mtk_ovl_clk_enable(struct device *dev)
 {
 	struct mtk_disp_ovl *ovl = dev_get_drvdata(dev);
+	int ret;
 
-	return clk_prepare_enable(ovl->clk);
+	ret = clk_prepare_enable(ovl->clk);
+	if (ret)
+		return ret;
+
+	if (ovl->rst)
+		mtk_ovl_recover(ovl, dev);
+
+	return 0;
 }
 
 void mtk_ovl_clk_disable(struct device *dev)
@@ -633,6 +670,11 @@ static int mtk_disp_ovl_probe(struct platform_device *pdev)
 	if (IS_ERR(priv->clk))
 		return dev_err_probe(dev, PTR_ERR(priv->clk),
 				     "failed to get ovl clk\n");
+
+	priv->rst = devm_reset_control_get_optional_exclusive(dev, NULL);
+	if (IS_ERR(priv->rst))
+		return dev_err_probe(dev, PTR_ERR(priv->rst),
+				     "failed to get ovl reset\n");
 
 	priv->regs = devm_platform_ioremap_resource(pdev, 0);
 	if (IS_ERR(priv->regs))
