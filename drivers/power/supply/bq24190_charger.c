@@ -9,6 +9,7 @@
 #include <linux/module.h>
 #include <linux/interrupt.h>
 #include <linux/delay.h>
+#include <linux/gpio/consumer.h>
 #include <linux/pm_runtime.h>
 #include <linux/power_supply.h>
 #include <linux/power/bq24190_charger.h>
@@ -2066,6 +2067,7 @@ static int bq24190_probe(struct i2c_client *client)
 	struct device *dev = &client->dev;
 	struct power_supply_config charger_cfg = {}, battery_cfg = {};
 	struct bq24190_dev_info *bdi;
+	struct gpio_desc *ce_gpio;
 	int ret;
 
 	if (!i2c_check_functionality(adapter, I2C_FUNC_SMBUS_BYTE_DATA)) {
@@ -2096,6 +2098,12 @@ static int bq24190_probe(struct i2c_client *client)
 		dev_err(dev, "Can't get irq info\n");
 		return -EINVAL;
 	}
+
+	/* Charging is controlled through CHG_CONFIG; keep the CE pin asserted. */
+	ce_gpio = devm_gpiod_get_optional(dev, "ce", GPIOD_OUT_HIGH);
+	if (IS_ERR(ce_gpio))
+		return dev_err_probe(dev, PTR_ERR(ce_gpio),
+				     "Can't get ce gpio\n");
 
 	bdi->edev = devm_extcon_dev_allocate(dev, bq24190_usb_extcon_cable);
 	if (IS_ERR(bdi->edev))
