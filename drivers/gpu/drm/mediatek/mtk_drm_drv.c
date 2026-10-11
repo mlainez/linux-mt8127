@@ -258,6 +258,13 @@ static const struct mtk_mmsys_driver_data mt2712_mmsys_driver_data = {
 	.mmsys_dev_num = 1,
 };
 
+static const struct mtk_mmsys_driver_data mt8127_mmsys_driver_data = {
+	.main_path = mt7623_mtk_ddp_main,
+	.main_len = ARRAY_SIZE(mt7623_mtk_ddp_main),
+	.shadow_register = true,
+	.mmsys_dev_num = 1,
+};
+
 static const struct mtk_mmsys_driver_data mt8167_mmsys_driver_data = {
 	.main_path = mt8167_mtk_ddp_main,
 	.main_len = ARRAY_SIZE(mt8167_mtk_ddp_main),
@@ -337,6 +344,8 @@ static const struct of_device_id mtk_drm_of_ids[] = {
 	  .data = &mt7623_mmsys_driver_data},
 	{ .compatible = "mediatek,mt2712-mmsys",
 	  .data = &mt2712_mmsys_driver_data},
+	{ .compatible = "mediatek,mt8127-mmsys",
+	  .data = &mt8127_mmsys_driver_data},
 	{ .compatible = "mediatek,mt8167-mmsys",
 	  .data = &mt8167_mmsys_driver_data},
 	{ .compatible = "mediatek,mt8173-mmsys",
@@ -751,6 +760,8 @@ static const struct of_device_id mtk_ddp_comp_dt_ids[] = {
 	{ .compatible = "mediatek,mt2701-disp-mutex",
 	  .data = (void *)MTK_DISP_MUTEX },
 	{ .compatible = "mediatek,mt2712-disp-mutex",
+	  .data = (void *)MTK_DISP_MUTEX },
+	{ .compatible = "mediatek,mt8127-disp-mutex",
 	  .data = (void *)MTK_DISP_MUTEX },
 	{ .compatible = "mediatek,mt8167-disp-mutex",
 	  .data = (void *)MTK_DISP_MUTEX },
