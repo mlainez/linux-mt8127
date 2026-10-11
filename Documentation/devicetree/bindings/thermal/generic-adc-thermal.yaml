@@ -24,6 +24,12 @@ properties:
   '#thermal-sensor-cells':
     const: 0
 
+  '#io-channel-cells':
+    const: 0
+    description:
+      The sensor provides its temperature as an IIO channel to consumers
+      such as a battery driver.
+
   io-channels:
     maxItems: 1
 
