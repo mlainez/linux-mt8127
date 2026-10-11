@@ -2,7 +2,7 @@
 /*
  * Copyright (c) 2026 Marc Lainez <marc.lainez@gmail.com>
  *
- * MediaTek MT8127 APMIXEDSYS: the PLLs that feed the CPU clock mux.
+ * MediaTek MT8127 APMIXEDSYS: the PLLs.
  */
 
 #include <dt-bindings/clock/mt8127-clk.h>
@@ -51,6 +51,13 @@ static const struct mtk_pll_data plls[] = {
 	      PLL_AO, 0),
 	PLL(CLK_APMIXED_MAINPLL, "mainpll", 0x210, 0x21c, PLL_AO),
 	PLL(CLK_APMIXED_UNIVPLL, "univpll", 0x220, 0x22c, PLL_AO),
+	PLL(CLK_APMIXED_MMPLL, "mmpll", 0x230, 0x23c, 0),
+	PLL(CLK_APMIXED_MSDCPLL, "msdcpll", 0x240, 0x24c, 0),
+	/* 31 bit PCW with 24 fractional bits, and a tuner in AUDPLL_CON3. */
+	PLL_B(CLK_APMIXED_AUDPLL, "audpll", 0x250, 0x25c, 0x250, 4, 31, 0,
+	      0x408),
+	PLL(CLK_APMIXED_TVDPLL, "tvdpll", 0x260, 0x26c, 0),
+	PLL(CLK_APMIXED_LVDSPLL, "lvdspll", 0x270, 0x27c, 0),
 };
 
 static int clk_mt8127_apmixed_probe(struct platform_device *pdev)
