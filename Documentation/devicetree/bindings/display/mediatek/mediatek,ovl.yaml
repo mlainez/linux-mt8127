@@ -65,6 +65,11 @@ properties:
     items:
       - description: OVL Clock
 
+  resets:
+    items:
+      - description: MMSYS reset of the OVL, needed when the soft reset does
+          not leave a stuck state
+
   iommus:
     description:
       This property should point to the respective IOMMU block with master port as argument,
