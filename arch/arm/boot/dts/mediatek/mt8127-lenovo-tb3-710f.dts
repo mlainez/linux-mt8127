@@ -831,3 +831,60 @@
 &fuel_gauge {
 	power-supplies = <&charger>;
 };
+
+/*
+ * Audio. The AFE exchanges samples with the MT6323 codec over the AUD_* pins.
+ * The headphone outputs of the codec also feed the speaker amplifier, which
+ * GPIO30 enables. GPIO26 (EINT4) follows the headphone jack switch and is
+ * low while a plug is inserted.
+ */
+&pwrap {
+	pmic {
+		mt6323_codec: audio-codec {
+			compatible = "mediatek,mt6323-codec";
+		};
+	};
+};
+
+&pio {
+	aud_pins: aud-pins {
+		pins-out {
+			pinmux = <MT8127_PIN_7_AUD_CLK_MOSI__FUNC_AUD_CLK>,
+				 <MT8127_PIN_9_AUD_DAT_MOSI__FUNC_AUD_MOSI>;
+			bias-disable;
+		};
+
+		pins-in {
+			pinmux = <MT8127_PIN_8_AUD_DAT_MISO__FUNC_AUD_MISO>;
+			bias-pull-down;
+			input-enable;
+		};
+	};
+
+	sound_pins: sound-pins {
+		pins-spk-en {
+			pinmux = <MT8127_PIN_30_EINT8__FUNC_GPIO30>;
+			bias-pull-up;
+			output-low;
+		};
+
+		pins-hp-det {
+			pinmux = <MT8127_PIN_26_EINT4__FUNC_GPIO26>;
+			bias-disable;
+			input-enable;
+		};
+	};
+};
+
+/ {
+	sound {
+		compatible = "mediatek,mt8127-mt6323";
+		model = "TB3-710F";
+		mediatek,platform = <&afe>;
+		mediatek,audio-codec = <&mt6323_codec>;
+		spk-en-gpios = <&pio 30 GPIO_ACTIVE_HIGH>;
+		hp-det-gpios = <&pio 26 GPIO_ACTIVE_LOW>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&aud_pins>, <&sound_pins>;
+	};
+};
