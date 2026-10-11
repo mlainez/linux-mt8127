@@ -1,0 +1,9 @@
+/* SPDX-License-Identifier: (GPL-2.0-only OR BSD-2-Clause) */
+
+#ifndef _DT_BINDINGS_RESET_CONTROLLER_MT8127
+#define _DT_BINDINGS_RESET_CONTROLLER_MT8127
+
+/* MMSYS resets */
+#define MT8127_MMSYS_SW0_RST_B_DISP_OVL		8
+
+#endif /* _DT_BINDINGS_RESET_CONTROLLER_MT8127 */
