@@ -475,15 +475,72 @@ config COMMON_CLK_MT8127
 	select COMMON_CLK_MEDIATEK
 	default ARCH_MEDIATEK && ARM
 	help
-	  This driver supports the MediaTek MT8127 clocks needed to scale the
-	  CPU frequency (the PLLs of the apmixedsys and the CPU clock mux of
-	  the infracfg) and the I2C and AP DMA clock gates of the pericfg. The other
-	  peripheral clocks are not described yet and keep the state the
-	  bootloader left them in.
+	  This driver supports the MediaTek MT8127 basic clocks: the PLLs of
+	  the apmixedsys, the bus and peripheral clock muxes of the topckgen,
+	  the CPU clock mux of the infracfg and the I2C and AP DMA clock gates
+	  of the pericfg.
 
 	  To compile this driver as a module, choose M here: the modules
-	  will be called clk-mt8127-apmixedsys, clk-mt8127-infracfg and
-	  clk-mt8127-pericfg.
+	  will be called clk-mt8127-apmixedsys, clk-mt8127-infracfg,
+	  clk-mt8127-topckgen and clk-mt8127-pericfg.
+
+config COMMON_CLK_MT8127_AUDSYS
+	tristate "Clock driver for MediaTek MT8127 audsys"
+	depends on COMMON_CLK_MT8127
+	default COMMON_CLK_MT8127
+	help
+	  This driver supports the MediaTek MT8127 audsys clocks, which gate
+	  the audio front end: the AFE, I2S, HDMI and S/PDIF
+	  clocks of AUDIO_TOP_CON0.
+
+	  To compile this driver as a module, choose M here: the module
+	  will be called clk-mt8127-aud.
+
+config COMMON_CLK_MT8127_IMGSYS
+	tristate "Clock driver for MediaTek MT8127 imgsys"
+	depends on COMMON_CLK_MT8127
+	default COMMON_CLK_MT8127
+	help
+	  This driver supports the MediaTek MT8127 imgsys clocks, which gate
+	  the camera ISP, the sensor interface, the SMI larb of
+	  the camera and the JPEG encoder.
+
+	  To compile this driver as a module, choose M here: the module
+	  will be called clk-mt8127-img.
+
+config COMMON_CLK_MT8127_MFGCFG
+	tristate "Clock driver for MediaTek MT8127 mfgcfg"
+	depends on COMMON_CLK_MT8127
+	default COMMON_CLK_MT8127
+	help
+	  This driver supports the MediaTek MT8127 mfgcfg clocks, which gate
+	  the Mali-450 GPU core clock.
+
+	  To compile this driver as a module, choose M here: the module
+	  will be called clk-mt8127-mfg.
+
+config COMMON_CLK_MT8127_MMSYS
+	tristate "Clock driver for MediaTek MT8127 mmsys"
+	depends on COMMON_CLK_MT8127
+	default COMMON_CLK_MT8127
+	help
+	  This driver supports the MediaTek MT8127 mmsys clocks, which gate
+	  the display and MDP engines, the multimedia SMI and the
+	  DSI, DPI, HDMI and LVDS interfaces.
+
+	  To compile this driver as a module, choose M here: the module
+	  will be called clk-mt8127-mm.
+
+config COMMON_CLK_MT8127_VDECSYS
+	tristate "Clock driver for MediaTek MT8127 vdecsys"
+	depends on COMMON_CLK_MT8127
+	default COMMON_CLK_MT8127
+	help
+	  This driver supports the MediaTek MT8127 vdecsys clocks, which gate
+	  the video decoder and its SMI larb.
+
+	  To compile this driver as a module, choose M here: the module
+	  will be called clk-mt8127-vdec.
 
 config COMMON_CLK_MT8135
 	tristate "Clock driver for MediaTek MT8135"

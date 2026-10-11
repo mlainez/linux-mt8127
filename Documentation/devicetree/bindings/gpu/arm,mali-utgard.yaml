@@ -46,6 +46,7 @@ properties:
               - amlogic,meson-gxl-mali
               - hisilicon,hi6220-mali
               - mediatek,mt7623-mali
+              - mediatek,mt8127-mali
               - rockchip,rk3328-mali
               - rockchip,rk3528-mali
           - const: arm,mali-450

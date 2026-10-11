@@ -2,7 +2,7 @@
 /*
  * Copyright (c) 2026 Marc Lainez <marc.lainez@gmail.com>
  *
- * MediaTek MT8127 APMIXEDSYS: the PLLs that feed the CPU clock mux.
+ * MediaTek MT8127 APMIXEDSYS: the PLLs.
  */
 
 #include <dt-bindings/clock/mt8127-clk.h>
@@ -19,11 +19,13 @@
 #define MT8127_PLL_FMIN		(1000UL * MHZ)
 
 /*
- * Layout shared by the PLLs: CON0 bit 0 enables, the 21 bit PCW is in CON1
- * with the post divider in CON1[26:24], and CON1[31] makes the PLL take a new
- * PCW. The ARMPLL runs the CPUs, so it must never be switched off.
+ * Layout shared by the PLLs: CON0 bit 0 enables, the 21 bit PCW is in CON1 and
+ * CON1[31] makes the PLL take a new PCW. The post divider of the ARMPLL is in
+ * CON1[26:24], the one of the other PLLs in CON0[6:4]. The ARMPLL runs the CPUs
+ * and the MAINPLL and UNIVPLL feed the buses, so they must never be switched
+ * off.
  */
-#define PLL(_id, _name, _reg, _pwr_reg, _pcw_reg, _flags) {		\
+#define PLL_B(_id, _name, _reg, _pwr_reg, _pd_reg, _pd_shift, _pcwbits, _flags, _tuner_reg) { \
 		.id = _id,						\
 		.name = _name,						\
 		.reg = _reg,						\
@@ -32,18 +34,30 @@
 		.flags = _flags,					\
 		.fmax = MT8127_PLL_FMAX,				\
 		.fmin = MT8127_PLL_FMIN,				\
-		.pcwbits = 21,						\
-		.pd_reg = _pcw_reg,					\
-		.pd_shift = 24,						\
-		.pcw_reg = _pcw_reg,					\
+		.pcwbits = _pcwbits,					\
+		.pd_reg = _pd_reg,					\
+		.pd_shift = _pd_shift,					\
+		.tuner_reg = _tuner_reg,				\
+		.pcw_reg = (_reg) + 0x4,				\
 		.pcw_shift = 0,						\
-		.pcw_chg_reg = _pcw_reg,				\
+		.pcw_chg_reg = (_reg) + 0x4,				\
 	}
 
+#define PLL(_id, _name, _reg, _pwr_reg, _flags)			\
+	PLL_B(_id, _name, _reg, _pwr_reg, _reg, 4, 21, _flags, 0)
+
 static const struct mtk_pll_data plls[] = {
-	PLL(CLK_APMIXED_ARMPLL, "armpll", 0x200, 0x20c, 0x204, PLL_AO),
-	PLL(CLK_APMIXED_MAINPLL, "mainpll", 0x210, 0x21c, 0x214, PLL_AO),
-	PLL(CLK_APMIXED_UNIVPLL, "univpll", 0x220, 0x22c, 0x224, PLL_AO),
+	PLL_B(CLK_APMIXED_ARMPLL, "armpll", 0x200, 0x20c, 0x204, 24, 21,
+	      PLL_AO, 0),
+	PLL(CLK_APMIXED_MAINPLL, "mainpll", 0x210, 0x21c, PLL_AO),
+	PLL(CLK_APMIXED_UNIVPLL, "univpll", 0x220, 0x22c, PLL_AO),
+	PLL(CLK_APMIXED_MMPLL, "mmpll", 0x230, 0x23c, 0),
+	PLL(CLK_APMIXED_MSDCPLL, "msdcpll", 0x240, 0x24c, 0),
+	/* 31 bit PCW with 24 fractional bits, and a tuner in AUDPLL_CON3. */
+	PLL_B(CLK_APMIXED_AUDPLL, "audpll", 0x250, 0x25c, 0x250, 4, 31, 0,
+	      0x408),
+	PLL(CLK_APMIXED_TVDPLL, "tvdpll", 0x260, 0x26c, 0),
+	PLL(CLK_APMIXED_LVDSPLL, "lvdspll", 0x270, 0x27c, 0),
 };
 
 static int clk_mt8127_apmixed_probe(struct platform_device *pdev)
