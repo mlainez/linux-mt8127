@@ -1,0 +1,68 @@
+# SPDX-License-Identifier: (GPL-2.0-only OR BSD-2-Clause)
+%YAML 1.2
+---
+$id: http://devicetree.org/schemas/sound/mediatek,mt8127-afe-pcm.yaml#
+$schema: http://devicetree.org/meta-schemas/core.yaml#
+
+title: MediaTek MT8127 audio front-end
+
+maintainers:
+  - Marc Lainez <marc.lainez@gmail.com>
+
+description:
+  The audio front-end (AFE) of the MT8127 moves PCM samples between memory
+  and its audio interfaces, among them the ADDA interface to the codec of the
+  MT6323 PMIC. Its registers are part of the audsys block, so the AFE is
+  described as the audio-controller child node of the audsys syscon.
+
+properties:
+  compatible:
+    const: mediatek,mt8127-afe-pcm
+
+  interrupts:
+    maxItems: 1
+
+  clocks:
+    items:
+      - description: infracfg audio bus clock
+      - description: topckgen audio clock mux
+      - description: topckgen audio internal bus clock mux
+      - description: audsys AFE clock gate
+
+  clock-names:
+    items:
+      - const: infra_sys_audio_clk
+      - const: top_pdn_audio
+      - const: top_pdn_aud_intbus
+      - const: aud_afe
+
+  memory-region:
+    description: memory region for the audio DMA buffers
+    maxItems: 1
+
+required:
+  - compatible
+  - interrupts
+  - clocks
+  - clock-names
+
+additionalProperties: false
+
+examples:
+  - |
+    #include <dt-bindings/clock/mt8127-clk.h>
+    #include <dt-bindings/interrupt-controller/arm-gic.h>
+    #include <dt-bindings/interrupt-controller/irq.h>
+
+    audio-controller {
+        compatible = "mediatek,mt8127-afe-pcm";
+        interrupts = <GIC_SPI 104 IRQ_TYPE_LEVEL_LOW>;
+        clocks = <&infracfg CLK_INFRA_AUDIO>,
+                 <&topckgen CLK_TOP_AUDIO_SEL>,
+                 <&topckgen CLK_TOP_AUD_INTBUS_SEL>,
+                 <&audsys CLK_AUD_AFE>;
+        clock-names = "infra_sys_audio_clk",
+                      "top_pdn_audio",
+                      "top_pdn_aud_intbus",
+                      "aud_afe";
+    };
