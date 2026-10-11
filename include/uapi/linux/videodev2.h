@@ -828,6 +828,23 @@ struct v4l2_pix_format {
 #define V4L2_PIX_FMT_IPU3_SGRBG10	v4l2_fourcc('i', 'p', '3', 'G') /* IPU3 packed 10-bit GRBG bayer */
 #define V4L2_PIX_FMT_IPU3_SRGGB10	v4l2_fourcc('i', 'p', '3', 'r') /* IPU3 packed 10-bit RGGB bayer */
 
+/*
+ * MediaTek ISP packed Bayer formats: each line is a little-endian bitstream,
+ * pixel n occupying bits [n * bpp, (n + 1) * bpp), LSB first.
+ */
+#define V4L2_PIX_FMT_MTISP_SBGGR8	v4l2_fourcc('M', 'B', 'B', '8') /* MediaTek packed 8-bit BGGR */
+#define V4L2_PIX_FMT_MTISP_SGBRG8	v4l2_fourcc('M', 'B', 'G', '8') /* MediaTek packed 8-bit GBRG */
+#define V4L2_PIX_FMT_MTISP_SGRBG8	v4l2_fourcc('M', 'B', 'g', '8') /* MediaTek packed 8-bit GRBG */
+#define V4L2_PIX_FMT_MTISP_SRGGB8	v4l2_fourcc('M', 'B', 'R', '8') /* MediaTek packed 8-bit RGGB */
+#define V4L2_PIX_FMT_MTISP_SBGGR10	v4l2_fourcc('M', 'B', 'B', 'A') /* MediaTek packed 10-bit BGGR */
+#define V4L2_PIX_FMT_MTISP_SGBRG10	v4l2_fourcc('M', 'B', 'G', 'A') /* MediaTek packed 10-bit GBRG */
+#define V4L2_PIX_FMT_MTISP_SGRBG10	v4l2_fourcc('M', 'B', 'g', 'A') /* MediaTek packed 10-bit GRBG */
+#define V4L2_PIX_FMT_MTISP_SRGGB10	v4l2_fourcc('M', 'B', 'R', 'A') /* MediaTek packed 10-bit RGGB */
+#define V4L2_PIX_FMT_MTISP_SBGGR12	v4l2_fourcc('M', 'B', 'B', 'C') /* MediaTek packed 12-bit BGGR */
+#define V4L2_PIX_FMT_MTISP_SGBRG12	v4l2_fourcc('M', 'B', 'G', 'C') /* MediaTek packed 12-bit GBRG */
+#define V4L2_PIX_FMT_MTISP_SGRBG12	v4l2_fourcc('M', 'B', 'g', 'C') /* MediaTek packed 12-bit GRBG */
+#define V4L2_PIX_FMT_MTISP_SRGGB12	v4l2_fourcc('M', 'B', 'R', 'C') /* MediaTek packed 12-bit RGGB */
+
 /* Raspberry Pi PiSP compressed formats. */
 #define V4L2_PIX_FMT_PISP_COMP1_RGGB	v4l2_fourcc('P', 'C', '1', 'R') /* PiSP 8-bit mode 1 compressed RGGB bayer */
 #define V4L2_PIX_FMT_PISP_COMP1_GRBG	v4l2_fourcc('P', 'C', '1', 'G') /* PiSP 8-bit mode 1 compressed GRBG bayer */

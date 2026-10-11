@@ -27,6 +27,7 @@ orders. See also `the Wikipedia article on Bayer filter
     pixfmt-srggb10alaw8
     pixfmt-srggb10dpcm8
     pixfmt-srggb10-ipu3
+    pixfmt-srggb-mtisp
     pixfmt-srggb12
     pixfmt-srggb12p
     pixfmt-srggb14
