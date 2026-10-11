@@ -205,13 +205,6 @@
  * were enabled by the bootloader and have no consumer in this tree yet.
  */
 / {
-	clk26m: oscillator-26m {
-		compatible = "fixed-clock";
-		#clock-cells = <0>;
-		clock-frequency = <26000000>;
-		clock-output-names = "clk26m";
-	};
-
 	soc {
 		pwrap: pwrap@1000d000 {
 			compatible = "mediatek,mt8127-pwrap";
