@@ -58,6 +58,8 @@ static const struct mtk_mmsys_driver_data mt8127_mmsys_driver_data = {
 	.clk_driver = "clk-mt8127-mm",
 	.routes = mt8127_mmsys_routing_table,
 	.num_routes = ARRAY_SIZE(mt8127_mmsys_routing_table),
+	.sw0_rst_offset = MT8127_MMSYS_SW0_RST_B,
+	.num_resets = 32,
 };
 
 static const struct mtk_mmsys_driver_data mt8167_mmsys_driver_data = {

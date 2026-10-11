@@ -9,6 +9,7 @@
 #include <dt-bindings/interrupt-controller/irq.h>
 #include <dt-bindings/interrupt-controller/arm-gic.h>
 #include <dt-bindings/power/mediatek,mt8127-power.h>
+#include <dt-bindings/reset/mt8127-resets.h>
 
 / {
 	#address-cells = <2>;
@@ -327,6 +328,7 @@
 			compatible = "mediatek,mt8127-mmsys", "syscon";
 			reg = <0 0x14000000 0 0x1000>;
 			#clock-cells = <1>;
+			#reset-cells = <1>;
 			power-domains = <&scpsys MT8127_POWER_DOMAIN_DISP>;
 		};
 
@@ -336,6 +338,7 @@
 			reg = <0 0x14007000 0 0x1000>;
 			interrupts = <GIC_SPI 153 IRQ_TYPE_LEVEL_LOW>;
 			clocks = <&mmsys CLK_MM_DISP_OVL>;
+			resets = <&mmsys MT8127_MMSYS_SW0_RST_B_DISP_OVL>;
 			power-domains = <&scpsys MT8127_POWER_DOMAIN_DISP>;
 		};
 
