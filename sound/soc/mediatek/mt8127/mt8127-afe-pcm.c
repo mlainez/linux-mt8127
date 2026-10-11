@@ -62,6 +62,7 @@
 #define AFE_IRQ_CNT2		0x03b0
 #define AFE_IRQ_MCU_EN		0x03b4
 #define FPGA_CFG1		0x04c4
+#define AFE_ASRC_CON0		0x0500
 
 /* AUDIO_TOP_CON0 */
 #define AUD_TCON0_PDN_DAC_PREDIS	BIT(26)
@@ -84,6 +85,9 @@
 
 /* FPGA_CFG1: clock of the I2S input in master mode */
 #define FPGA_CFG1_I2S_IN_MASTER_CLK	BIT(8)
+
+/* AFE_ASRC_CON0: the I2S input delivers no samples in slave mode without it */
+#define AFE_ASRC_CON0_EN		BIT(0)
 
 /* AFE_I2S_CON1: the I2S output that feeds the DL path of the ADDA */
 #define AFE_I2S_CON1_RATE(x)		(((x) & 0xf) << 8)
@@ -408,6 +412,7 @@ static void mt8127_afe_i2s_shutdown(struct snd_pcm_substream *substream,
 	struct mtk_base_afe *afe = snd_soc_dai_get_drvdata(dai);
 
 	regmap_update_bits(afe->regmap, AFE_I2S_CON, AFE_I2S_CON_EN, 0);
+	regmap_update_bits(afe->regmap, AFE_ASRC_CON0, AFE_ASRC_CON0_EN, 0);
 	regmap_update_bits(afe->regmap, AUDIO_TOP_CON0, AUD_TCON0_PDN_I2S,
 			   AUD_TCON0_PDN_I2S);
 }
@@ -427,6 +432,8 @@ static int mt8127_afe_i2s_prepare(struct snd_pcm_substream *substream,
 	regmap_write(afe->regmap, AFE_I2S_CON,
 		     AFE_I2S_CON_PHASE_SHIFT_FIX | AFE_I2S_CON_FORMAT_I2S |
 		     AFE_I2S_CON_SLAVE);
+	regmap_update_bits(afe->regmap, AFE_ASRC_CON0, AFE_ASRC_CON0_EN,
+			   AFE_ASRC_CON0_EN);
 	regmap_update_bits(afe->regmap, AFE_I2S_CON, AFE_I2S_CON_EN,
 			   AFE_I2S_CON_EN);
 
