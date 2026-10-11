@@ -30,6 +30,7 @@
 #define AUDIO_TOP_CON0		0x0000
 #define AFE_DAC_CON0		0x0010
 #define AFE_DAC_CON1		0x0014
+#define AFE_I2S_CON		0x0018
 #define AFE_CONN1		0x0024
 #define AFE_CONN2		0x0028
 #define AFE_CONN3		0x002c
@@ -38,6 +39,9 @@
 #define AFE_DL1_CUR		0x0044
 #define AFE_DL1_END		0x0048
 #define AFE_CONN_24BIT		0x006c
+#define AFE_AWB_BASE		0x0070
+#define AFE_AWB_END		0x0078
+#define AFE_AWB_CUR		0x007c
 #define AFE_VUL_BASE		0x0080
 #define AFE_VUL_END		0x0088
 #define AFE_VUL_CUR		0x008c
@@ -57,14 +61,29 @@
 #define AFE_IRQ_CNT1		0x03ac
 #define AFE_IRQ_CNT2		0x03b0
 #define AFE_IRQ_MCU_EN		0x03b4
+#define FPGA_CFG1		0x04c4
 
 /* AUDIO_TOP_CON0 */
 #define AUD_TCON0_PDN_DAC_PREDIS	BIT(26)
 #define AUD_TCON0_PDN_DAC		BIT(25)
 #define AUD_TCON0_PDN_ADC		BIT(24)
+#define AUD_TCON0_PDN_I2S		BIT(6)
 #define AUD_TCON0_APB_R2T		BIT(30)
 #define AUD_TCON0_APB_W2T		BIT(29)
 #define AUD_TCON0_APB_BUS		BIT(14)
+
+/*
+ * AFE_I2S_CON: the I2S input. In slave mode the transmitter provides the bit
+ * and frame clocks; the input pad is either the CONSYS link or the pin mux.
+ */
+#define AFE_I2S_CON_PHASE_SHIFT_FIX	BIT(31)
+#define AFE_I2S_CON_PAD_IO_MUX		BIT(28)
+#define AFE_I2S_CON_FORMAT_I2S		BIT(3)
+#define AFE_I2S_CON_SLAVE		BIT(2)
+#define AFE_I2S_CON_EN			BIT(0)
+
+/* FPGA_CFG1: clock of the I2S input in master mode */
+#define FPGA_CFG1_I2S_IN_MASTER_CLK	BIT(8)
 
 /* AFE_I2S_CON1: the I2S output that feeds the DL path of the ADDA */
 #define AFE_I2S_CON1_RATE(x)		(((x) & 0xf) << 8)
@@ -97,8 +116,10 @@
 enum {
 	MT8127_AFE_MEMIF_DL1,
 	MT8127_AFE_MEMIF_VUL,
+	MT8127_AFE_MEMIF_AWB,
 	MT8127_AFE_MEMIF_NUM,
 	MT8127_AFE_IO_ADDA = MT8127_AFE_MEMIF_NUM,
+	MT8127_AFE_IO_I2S,
 };
 
 /* The AFE has two MCU interrupt counters for its memory interfaces. */
@@ -139,6 +160,9 @@ static const unsigned int mt8127_afe_backup_list[] = {
 	AFE_DL1_END,
 	AFE_VUL_BASE,
 	AFE_VUL_END,
+	AFE_AWB_BASE,
+	AFE_AWB_END,
+	AFE_I2S_CON,
 	AFE_DAC_CON0,
 };
 
@@ -368,6 +392,53 @@ static const struct snd_soc_dai_ops mt8127_afe_adda_ops = {
 	.prepare	= mt8127_afe_adda_prepare,
 };
 
+static int mt8127_afe_i2s_startup(struct snd_pcm_substream *substream,
+				  struct snd_soc_dai *dai)
+{
+	struct mtk_base_afe *afe = snd_soc_dai_get_drvdata(dai);
+
+	regmap_update_bits(afe->regmap, AUDIO_TOP_CON0, AUD_TCON0_PDN_I2S, 0);
+
+	return 0;
+}
+
+static void mt8127_afe_i2s_shutdown(struct snd_pcm_substream *substream,
+				    struct snd_soc_dai *dai)
+{
+	struct mtk_base_afe *afe = snd_soc_dai_get_drvdata(dai);
+
+	regmap_update_bits(afe->regmap, AFE_I2S_CON, AFE_I2S_CON_EN, 0);
+	regmap_update_bits(afe->regmap, AUDIO_TOP_CON0, AUD_TCON0_PDN_I2S,
+			   AUD_TCON0_PDN_I2S);
+}
+
+/*
+ * The I2S input receives the FM audio of the CONSYS: 16-bit I2S from the
+ * CONSYS pad, clocked by the FM core, so the rate needs no setting.
+ */
+static int mt8127_afe_i2s_prepare(struct snd_pcm_substream *substream,
+				  struct snd_soc_dai *dai)
+{
+	struct mtk_base_afe *afe = snd_soc_dai_get_drvdata(dai);
+
+	regmap_update_bits(afe->regmap, AFE_I2S_CON, AFE_I2S_CON_EN, 0);
+	regmap_update_bits(afe->regmap, FPGA_CFG1, FPGA_CFG1_I2S_IN_MASTER_CLK,
+			   0);
+	regmap_write(afe->regmap, AFE_I2S_CON,
+		     AFE_I2S_CON_PHASE_SHIFT_FIX | AFE_I2S_CON_FORMAT_I2S |
+		     AFE_I2S_CON_SLAVE);
+	regmap_update_bits(afe->regmap, AFE_I2S_CON, AFE_I2S_CON_EN,
+			   AFE_I2S_CON_EN);
+
+	return 0;
+}
+
+static const struct snd_soc_dai_ops mt8127_afe_i2s_ops = {
+	.startup	= mt8127_afe_i2s_startup,
+	.shutdown	= mt8127_afe_i2s_shutdown,
+	.prepare	= mt8127_afe_i2s_prepare,
+};
+
 #define MT8127_AFE_DL_RATES	SNDRV_PCM_RATE_8000_48000
 #define MT8127_AFE_UL_RATES	(SNDRV_PCM_RATE_8000 | SNDRV_PCM_RATE_16000 | \
 				 SNDRV_PCM_RATE_32000 | SNDRV_PCM_RATE_48000)
@@ -397,6 +468,18 @@ static struct snd_soc_dai_driver mt8127_afe_pcm_dais[] = {
 		},
 		.ops = &mtk_afe_fe_ops,
 	}, {
+		/* records the I2S input, which the FM receiver clocks at 32 kHz */
+		.name = "AWB",
+		.id = MT8127_AFE_MEMIF_AWB,
+		.capture = {
+			.stream_name = "AWB",
+			.channels_min = 1,
+			.channels_max = 2,
+			.rates = SNDRV_PCM_RATE_32000,
+			.formats = SNDRV_PCM_FMTBIT_S16_LE,
+		},
+		.ops = &mtk_afe_fe_ops,
+	}, {
 	/* BE DAI: the ADDA interface to the PMIC codec */
 		.name = "ADDA",
 		.id = MT8127_AFE_IO_ADDA,
@@ -415,13 +498,26 @@ static struct snd_soc_dai_driver mt8127_afe_pcm_dais[] = {
 			.formats = SNDRV_PCM_FMTBIT_S16_LE,
 		},
 		.ops = &mt8127_afe_adda_ops,
+	}, {
+	/* BE DAI: the I2S input, which carries the FM audio of the CONSYS */
+		.name = "I2S",
+		.id = MT8127_AFE_IO_I2S,
+		.capture = {
+			.stream_name = "I2S Capture",
+			.channels_min = 2,
+			.channels_max = 2,
+			.rates = SNDRV_PCM_RATE_32000,
+			.formats = SNDRV_PCM_FMTBIT_S16_LE,
+		},
+		.ops = &mt8127_afe_i2s_ops,
 	},
 };
 
 /*
  * Interconnections: I05/I06 are the DL1 left/right samples, O03/O04 feed the
  * ADDA downlink, I03/I04 are the ADDA uplink left/right samples and O09/O10
- * feed VUL.
+ * feed VUL. I00/I01 are the I2S input left/right samples and O05/O06 feed
+ * AWB.
  */
 static const struct snd_kcontrol_new mt8127_afe_o03_mix[] = {
 	SOC_DAPM_SINGLE_AUTODISABLE("I05 Switch", AFE_CONN1, 21, 1, 0),
@@ -429,6 +525,14 @@ static const struct snd_kcontrol_new mt8127_afe_o03_mix[] = {
 
 static const struct snd_kcontrol_new mt8127_afe_o04_mix[] = {
 	SOC_DAPM_SINGLE_AUTODISABLE("I06 Switch", AFE_CONN2, 6, 1, 0),
+};
+
+static const struct snd_kcontrol_new mt8127_afe_o05_mix[] = {
+	SOC_DAPM_SINGLE_AUTODISABLE("I00 Switch", AFE_CONN2, 16, 1, 0),
+};
+
+static const struct snd_kcontrol_new mt8127_afe_o06_mix[] = {
+	SOC_DAPM_SINGLE_AUTODISABLE("I01 Switch", AFE_CONN2, 22, 1, 0),
 };
 
 static const struct snd_kcontrol_new mt8127_afe_o09_mix[] = {
@@ -440,6 +544,8 @@ static const struct snd_kcontrol_new mt8127_afe_o10_mix[] = {
 };
 
 static const struct snd_soc_dapm_widget mt8127_afe_pcm_widgets[] = {
+	SND_SOC_DAPM_MIXER("I00", SND_SOC_NOPM, 0, 0, NULL, 0),
+	SND_SOC_DAPM_MIXER("I01", SND_SOC_NOPM, 0, 0, NULL, 0),
 	SND_SOC_DAPM_MIXER("I03", SND_SOC_NOPM, 0, 0, NULL, 0),
 	SND_SOC_DAPM_MIXER("I04", SND_SOC_NOPM, 0, 0, NULL, 0),
 	SND_SOC_DAPM_MIXER("I05", SND_SOC_NOPM, 0, 0, NULL, 0),
@@ -449,6 +555,10 @@ static const struct snd_soc_dapm_widget mt8127_afe_pcm_widgets[] = {
 			   mt8127_afe_o03_mix, ARRAY_SIZE(mt8127_afe_o03_mix)),
 	SND_SOC_DAPM_MIXER("O04", SND_SOC_NOPM, 0, 0,
 			   mt8127_afe_o04_mix, ARRAY_SIZE(mt8127_afe_o04_mix)),
+	SND_SOC_DAPM_MIXER("O05", SND_SOC_NOPM, 0, 0,
+			   mt8127_afe_o05_mix, ARRAY_SIZE(mt8127_afe_o05_mix)),
+	SND_SOC_DAPM_MIXER("O06", SND_SOC_NOPM, 0, 0,
+			   mt8127_afe_o06_mix, ARRAY_SIZE(mt8127_afe_o06_mix)),
 	SND_SOC_DAPM_MIXER("O09", SND_SOC_NOPM, 0, 0,
 			   mt8127_afe_o09_mix, ARRAY_SIZE(mt8127_afe_o09_mix)),
 	SND_SOC_DAPM_MIXER("O10", SND_SOC_NOPM, 0, 0,
@@ -468,6 +578,12 @@ static const struct snd_soc_dapm_route mt8127_afe_pcm_routes[] = {
 	{ "O04", "I06 Switch", "I06" },
 	{ "O09", "I03 Switch", "I03" },
 	{ "O10", "I04 Switch", "I04" },
+	{ "AWB", NULL, "O05" },
+	{ "AWB", NULL, "O06" },
+	{ "I00", NULL, "I2S Capture" },
+	{ "I01", NULL, "I2S Capture" },
+	{ "O05", "I00 Switch", "I00" },
+	{ "O06", "I01 Switch", "I01" },
 };
 
 static const struct snd_soc_component_driver mt8127_afe_pcm_dai_component = {
@@ -513,6 +629,23 @@ static const struct mtk_base_memif_data memif_data[MT8127_AFE_MEMIF_NUM] = {
 		.hd_align_reg = -1,
 		.enable_reg = AFE_DAC_CON0,
 		.enable_shift = 3,
+		.msb_reg = -1,
+		.agent_disable_reg = -1,
+	}, {
+		.name = "AWB",
+		.id = MT8127_AFE_MEMIF_AWB,
+		.reg_ofs_base = AFE_AWB_BASE,
+		.reg_ofs_cur = AFE_AWB_CUR,
+		.reg_ofs_end = AFE_AWB_END,
+		.fs_reg = AFE_DAC_CON1,
+		.fs_shift = 12,
+		.fs_maskbit = 0xf,
+		.mono_reg = AFE_DAC_CON1,
+		.mono_shift = 24,
+		.hd_reg = -1,
+		.hd_align_reg = -1,
+		.enable_reg = AFE_DAC_CON0,
+		.enable_shift = 6,
 		.msb_reg = -1,
 		.agent_disable_reg = -1,
 	},
