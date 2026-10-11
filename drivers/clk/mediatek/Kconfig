@@ -496,6 +496,17 @@ config COMMON_CLK_MT8127_IMGSYS
 	  To compile this driver as a module, choose M here: the module
 	  will be called clk-mt8127-img.
 
+config COMMON_CLK_MT8127_MFGCFG
+	tristate "Clock driver for MediaTek MT8127 mfgcfg"
+	depends on COMMON_CLK_MT8127
+	default COMMON_CLK_MT8127
+	help
+	  This driver supports the MediaTek MT8127 mfgcfg clocks, which gate
+	  the Mali-450 GPU core clock.
+
+	  To compile this driver as a module, choose M here: the module
+	  will be called clk-mt8127-mfg.
+
 config COMMON_CLK_MT8127_MMSYS
 	tristate "Clock driver for MediaTek MT8127 mmsys"
 	depends on COMMON_CLK_MT8127
