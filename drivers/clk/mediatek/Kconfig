@@ -484,6 +484,18 @@ config COMMON_CLK_MT8127
 	  will be called clk-mt8127-apmixedsys, clk-mt8127-infracfg,
 	  clk-mt8127-topckgen and clk-mt8127-pericfg.
 
+config COMMON_CLK_MT8127_MMSYS
+	tristate "Clock driver for MediaTek MT8127 mmsys"
+	depends on COMMON_CLK_MT8127
+	default COMMON_CLK_MT8127
+	help
+	  This driver supports the MediaTek MT8127 mmsys clocks, which gate
+	  the display and MDP engines, the multimedia SMI and the
+	  DSI, DPI, HDMI and LVDS interfaces.
+
+	  To compile this driver as a module, choose M here: the module
+	  will be called clk-mt8127-mm.
+
 config COMMON_CLK_MT8135
 	tristate "Clock driver for MediaTek MT8135"
 	depends on (ARCH_MEDIATEK && ARM) || COMPILE_TEST
