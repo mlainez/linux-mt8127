@@ -89,6 +89,10 @@
 /* AFE_ASRC_CON0: the I2S input delivers no samples in slave mode without it */
 #define AFE_ASRC_CON0_EN		BIT(0)
 
+/* AFE_DAC_CON1: sample rate of the samples the I2S input hands to the memif */
+#define AFE_DAC_CON1_I2S_FS(x)		(((x) & 0xf) << 8)
+#define AFE_DAC_CON1_I2S_FS_MASK	AFE_DAC_CON1_I2S_FS(0xf)
+
 /* AFE_I2S_CON1: the I2S output that feeds the DL path of the ADDA */
 #define AFE_I2S_CON1_RATE(x)		(((x) & 0xf) << 8)
 #define AFE_I2S_CON1_FORMAT_I2S		BIT(3)
@@ -419,16 +423,23 @@ static void mt8127_afe_i2s_shutdown(struct snd_pcm_substream *substream,
 
 /*
  * The I2S input receives the FM audio of the CONSYS: 16-bit I2S from the
- * CONSYS pad, clocked by the FM core, so the rate needs no setting.
+ * CONSYS pad, clocked by the FM core. The input still needs the stream rate:
+ * at another rate each sample is repeated or dropped.
  */
 static int mt8127_afe_i2s_prepare(struct snd_pcm_substream *substream,
 				  struct snd_soc_dai *dai)
 {
 	struct mtk_base_afe *afe = snd_soc_dai_get_drvdata(dai);
+	int fs = mt8127_afe_fs(substream->runtime->rate);
+
+	if (fs < 0)
+		return fs;
 
 	regmap_update_bits(afe->regmap, AFE_I2S_CON, AFE_I2S_CON_EN, 0);
 	regmap_update_bits(afe->regmap, FPGA_CFG1, FPGA_CFG1_I2S_IN_MASTER_CLK,
 			   0);
+	regmap_update_bits(afe->regmap, AFE_DAC_CON1, AFE_DAC_CON1_I2S_FS_MASK,
+			   AFE_DAC_CON1_I2S_FS(fs));
 	regmap_write(afe->regmap, AFE_I2S_CON,
 		     AFE_I2S_CON_PHASE_SHIFT_FIX | AFE_I2S_CON_FORMAT_I2S |
 		     AFE_I2S_CON_SLAVE);
