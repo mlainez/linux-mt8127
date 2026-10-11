@@ -8,6 +8,7 @@
 #include <dt-bindings/clock/mt8127-clk.h>
 #include <dt-bindings/interrupt-controller/irq.h>
 #include <dt-bindings/interrupt-controller/arm-gic.h>
+#include <dt-bindings/power/mediatek,mt8127-power.h>
 
 / {
 	#address-cells = <2>;
@@ -70,6 +71,7 @@
 			compatible = "fixed-clock";
 			clock-frequency = <32000>;
 			#clock-cells = <0>;
+			clock-output-names = "rtc32k";
 		};
 
 		uart_clk: dummy26m {
@@ -100,9 +102,31 @@
 		compatible = "simple-bus";
 		ranges;
 
+		topckgen: clock-controller@10000000 {
+			compatible = "mediatek,mt8127-topckgen", "syscon";
+			reg = <0 0x10000000 0 0x1000>;
+			#clock-cells = <1>;
+		};
+
+		infracfg: clock-controller@10001000 {
+			compatible = "mediatek,mt8127-infracfg", "syscon";
+			reg = <0 0x10001000 0 0x1000>;
+			#clock-cells = <1>;
+		};
+
 		syscfg_pctl_a: syscon@10005000 {
 			compatible = "mediatek,mt8127-pctl-a-syscfg", "syscon";
 			reg = <0 0x10005000 0 0x1000>;
+		};
+
+		scpsys: power-controller@10006000 {
+			compatible = "mediatek,mt8127-scpsys", "syscon";
+			reg = <0 0x10006000 0 0x1000>;
+			#power-domain-cells = <1>;
+			infracfg = <&infracfg>;
+			clocks = <&topckgen CLK_TOP_MM_SEL>,
+				 <&topckgen CLK_TOP_MFG_SEL>;
+			clock-names = "mm", "mfg";
 		};
 
 		pio: pinctrl@1000b000 {
@@ -132,6 +156,12 @@
 			#interrupt-cells = <3>;
 			interrupt-parent = <&gic>;
 			reg = <0 0x10200100 0 0x1c>;
+		};
+
+		apmixedsys: clock-controller@10209000 {
+			compatible = "mediatek,mt8127-apmixedsys";
+			reg = <0 0x10209000 0 0x1000>;
+			#clock-cells = <1>;
 		};
 
 		gic: interrupt-controller@10211000 {
@@ -220,6 +250,70 @@
 			#address-cells = <1>;
 			#size-cells = <0>;
 			status = "disabled";
+		};
+
+		audsys: clock-controller@11220000 {
+			compatible = "mediatek,mt8127-audsys", "syscon";
+			reg = <0 0x11220000 0 0x1000>;
+			#clock-cells = <1>;
+			clocks = <&infracfg CLK_INFRA_AUDIO>;
+		};
+
+		mfgcfg: clock-controller@13000000 {
+			compatible = "mediatek,mt8127-mfgcfg", "syscon";
+			reg = <0 0x13000000 0 0x1000>;
+			#clock-cells = <1>;
+			power-domains = <&scpsys MT8127_POWER_DOMAIN_MFG>;
+		};
+
+		/*
+		 * Mali-450 MP4. The GPU reaches the DRAM through the multimedia SMI,
+		 * which serves as its bus clock. The core clock runs from UNIVPLL / 3
+		 * (416 MHz), as with the stock kernel.
+		 */
+		gpu: gpu@13040000 {
+			compatible = "mediatek,mt8127-mali", "arm,mali-450";
+			reg = <0 0x13040000 0 0x30000>;
+			interrupts = <GIC_SPI 170 IRQ_TYPE_LEVEL_LOW>,
+				     <GIC_SPI 171 IRQ_TYPE_LEVEL_LOW>,
+				     <GIC_SPI 172 IRQ_TYPE_LEVEL_LOW>,
+				     <GIC_SPI 173 IRQ_TYPE_LEVEL_LOW>,
+				     <GIC_SPI 174 IRQ_TYPE_LEVEL_LOW>,
+				     <GIC_SPI 175 IRQ_TYPE_LEVEL_LOW>,
+				     <GIC_SPI 176 IRQ_TYPE_LEVEL_LOW>,
+				     <GIC_SPI 177 IRQ_TYPE_LEVEL_LOW>,
+				     <GIC_SPI 178 IRQ_TYPE_LEVEL_LOW>,
+				     <GIC_SPI 179 IRQ_TYPE_LEVEL_LOW>,
+				     <GIC_SPI 180 IRQ_TYPE_LEVEL_LOW>;
+			interrupt-names = "gp", "gpmmu", "pp0", "ppmmu0", "pp1",
+					  "ppmmu1", "pp2", "ppmmu2", "pp3", "ppmmu3",
+					  "pp";
+			clocks = <&mmsys CLK_MM_SMI_COMMON>, <&mfgcfg CLK_MFG_G3D>;
+			clock-names = "bus", "core";
+			assigned-clocks = <&topckgen CLK_TOP_MFG_SEL>;
+			assigned-clock-parents = <&topckgen CLK_TOP_UNIVPLL_D3>;
+			power-domains = <&scpsys MT8127_POWER_DOMAIN_MFG>;
+		};
+
+		mmsys: syscon@14000000 {
+			compatible = "mediatek,mt8127-mmsys", "syscon";
+			reg = <0 0x14000000 0 0x1000>;
+			#clock-cells = <1>;
+			power-domains = <&scpsys MT8127_POWER_DOMAIN_DISP>;
+		};
+
+		imgsys: clock-controller@15000000 {
+			compatible = "mediatek,mt8127-imgsys", "syscon";
+			reg = <0 0x15000000 0 0x1000>;
+			#clock-cells = <1>;
+			power-domains = <&scpsys MT8127_POWER_DOMAIN_ISP>;
+		};
+
+		vdecsys: clock-controller@16000000 {
+			compatible = "mediatek,mt8127-vdecsys", "syscon";
+			reg = <0 0x16000000 0 0x1000>;
+			#clock-cells = <1>;
+			power-domains = <&scpsys MT8127_POWER_DOMAIN_VDEC>;
 		};
 	};
 };
