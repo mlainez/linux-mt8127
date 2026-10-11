@@ -74,6 +74,7 @@ obj-$(CONFIG_COMMON_CLK_MT7988) += clk-mt7988-eth.o
 obj-$(CONFIG_COMMON_CLK_MT7988) += clk-mt7988-xfipll.o
 obj-$(CONFIG_COMMON_CLK_MT8127) += clk-mt8127-apmixedsys.o clk-mt8127-infracfg.o
 obj-$(CONFIG_COMMON_CLK_MT8127) += clk-mt8127-topckgen.o clk-mt8127-pericfg.o
+obj-$(CONFIG_COMMON_CLK_MT8127_IMGSYS) += clk-mt8127-img.o
 obj-$(CONFIG_COMMON_CLK_MT8127_MMSYS) += clk-mt8127-mm.o
 obj-$(CONFIG_COMMON_CLK_MT8135) += clk-mt8135-apmixedsys.o clk-mt8135.o
 obj-$(CONFIG_COMMON_CLK_MT8167) += clk-mt8167-apmixedsys.o clk-mt8167.o

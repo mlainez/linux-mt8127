@@ -484,6 +484,18 @@ config COMMON_CLK_MT8127
 	  will be called clk-mt8127-apmixedsys, clk-mt8127-infracfg,
 	  clk-mt8127-topckgen and clk-mt8127-pericfg.
 
+config COMMON_CLK_MT8127_IMGSYS
+	tristate "Clock driver for MediaTek MT8127 imgsys"
+	depends on COMMON_CLK_MT8127
+	default COMMON_CLK_MT8127
+	help
+	  This driver supports the MediaTek MT8127 imgsys clocks, which gate
+	  the camera ISP, the sensor interface, the SMI larb of
+	  the camera and the JPEG encoder.
+
+	  To compile this driver as a module, choose M here: the module
+	  will be called clk-mt8127-img.
+
 config COMMON_CLK_MT8127_MMSYS
 	tristate "Clock driver for MediaTek MT8127 mmsys"
 	depends on COMMON_CLK_MT8127
