@@ -28,6 +28,7 @@ struct hx8282 {
 	struct gpio_desc *reset_gpio;
 	struct gpio_desc *standby_gpio;
 	struct gpio_desc *enable_gpio;
+	bool fw_on;
 
 	struct drm_display_mode mode;
 	u32 bus_format;
@@ -40,10 +41,22 @@ static inline struct hx8282 *to_hx8282(struct drm_panel *panel)
 	return container_of(panel, struct hx8282, panel);
 }
 
+static int hx8282_unprepare(struct drm_panel *panel);
+
 static int hx8282_prepare(struct drm_panel *panel)
 {
 	struct hx8282 *ctx = to_hx8282(panel);
 	int ret;
+
+	/*
+	 * Resetting the panel while the bootloader keeps it powered sometimes
+	 * leaves it washed out with a slowly fading white halo: power it down
+	 * first.
+	 */
+	if (ctx->fw_on) {
+		ctx->fw_on = false;
+		hx8282_unprepare(panel);
+	}
 
 	ret = regulator_enable(ctx->iovcc);
 	if (ret) {
@@ -150,6 +163,16 @@ static int hx8282_parse_dt(struct hx8282 *ctx)
 	return 0;
 }
 
+static void hx8282_release_fw_supplies(struct hx8282 *ctx)
+{
+	if (!ctx->fw_on)
+		return;
+
+	regulator_disable(ctx->vdd);
+	regulator_disable(ctx->iovcc);
+	ctx->fw_on = false;
+}
+
 static int hx8282_probe(struct platform_device *pdev)
 {
 	struct device *dev = &pdev->dev;
@@ -197,9 +220,24 @@ static int hx8282_probe(struct platform_device *pdev)
 		return dev_err_probe(dev, PTR_ERR(ctx->enable_gpio),
 				     "Failed to get enable GPIO\n");
 
+	if (gpiod_get_value_cansleep(ctx->enable_gpio) > 0 &&
+	    regulator_is_enabled(ctx->vdd)) {
+		ret = regulator_enable(ctx->iovcc);
+		if (ret)
+			return dev_err_probe(dev, ret, "Failed to enable iovcc\n");
+		ret = regulator_enable(ctx->vdd);
+		if (ret) {
+			regulator_disable(ctx->iovcc);
+			return dev_err_probe(dev, ret, "Failed to enable vdd\n");
+		}
+		ctx->fw_on = true;
+	}
+
 	ret = drm_panel_of_backlight(&ctx->panel);
-	if (ret)
+	if (ret) {
+		hx8282_release_fw_supplies(ctx);
 		return dev_err_probe(dev, ret, "Failed to get backlight\n");
+	}
 
 	drm_panel_add(&ctx->panel);
 	platform_set_drvdata(pdev, ctx);
@@ -212,6 +250,7 @@ static void hx8282_remove(struct platform_device *pdev)
 	struct hx8282 *ctx = platform_get_drvdata(pdev);
 
 	drm_panel_remove(&ctx->panel);
+	hx8282_release_fw_supplies(ctx);
 }
 
 static const struct of_device_id hx8282_of_match[] = {
