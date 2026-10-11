@@ -1304,6 +1304,7 @@ static struct platform_driver * const mtk_drm_drivers[] = {
 	&mtk_drm_platform_driver,
 	&mtk_dsi_driver,
 	&mtk_ethdr_driver,
+	&mtk_lvds_driver,
 	&mtk_mdp_rdma_driver,
 	&mtk_padding_driver,
 };
