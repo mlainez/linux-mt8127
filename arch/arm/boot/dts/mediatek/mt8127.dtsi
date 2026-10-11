@@ -100,6 +100,12 @@
 		compatible = "simple-bus";
 		ranges;
 
+		infracfg: clock-controller@10001000 {
+			compatible = "mediatek,mt8127-infracfg", "syscon";
+			reg = <0 0x10001000 0 0x1000>;
+			#clock-cells = <1>;
+		};
+
 		syscfg_pctl_a: syscon@10005000 {
 			compatible = "mediatek,mt8127-pctl-a-syscfg", "syscon";
 			reg = <0 0x10005000 0 0x1000>;
@@ -132,6 +138,12 @@
 			#interrupt-cells = <3>;
 			interrupt-parent = <&gic>;
 			reg = <0 0x10200100 0 0x1c>;
+		};
+
+		apmixedsys: clock-controller@10209000 {
+			compatible = "mediatek,mt8127-apmixedsys";
+			reg = <0 0x10209000 0 0x1000>;
+			#clock-cells = <1>;
 		};
 
 		gic: interrupt-controller@10211000 {

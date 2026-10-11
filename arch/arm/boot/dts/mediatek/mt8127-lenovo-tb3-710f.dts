@@ -279,18 +279,8 @@
 	};
 };
 
-/*
- * Clock controllers for the CPU frequency: the PLLs and the CPU clock mux. The
- * other clocks are still fixed (see the dummy clocks above).
- */
 / {
 	soc {
-		apmixedsys: clock-controller@10209000 {
-			compatible = "mediatek,mt8127-apmixedsys";
-			reg = <0 0x10209000 0 0x1000>;
-			#clock-cells = <1>;
-		};
-
 		/*
 		 * The bus clock: the bootloader selects MAINPLL / 4 (273 MHz) for the AXI
 		 * bus, and the I2C and DMA blocks of the pericfg run from it.
@@ -302,12 +292,6 @@
 			clock-mult = <1>;
 			clock-div = <4>;
 			clock-output-names = "axi_sel";
-		};
-
-		infracfg: clock-controller@10001000 {
-			compatible = "mediatek,mt8127-infracfg", "syscon";
-			reg = <0 0x10001000 0 0x1000>;
-			#clock-cells = <1>;
 		};
 	};
 };
