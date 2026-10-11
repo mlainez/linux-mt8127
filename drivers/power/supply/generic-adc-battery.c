@@ -133,6 +133,7 @@ static void gab_work(struct work_struct *work)
 {
 	struct gab *adc_bat;
 	struct delayed_work *delayed_work;
+	union power_supply_propval val;
 	int status;
 
 	delayed_work = to_delayed_work(work);
@@ -143,6 +144,11 @@ static void gab_work(struct work_struct *work)
 		adc_bat->status =  POWER_SUPPLY_STATUS_DISCHARGING;
 	else if (gab_charge_finished(adc_bat))
 		adc_bat->status = POWER_SUPPLY_STATUS_NOT_CHARGING;
+	else if (!power_supply_get_property_from_supplier(adc_bat->psy,
+							  POWER_SUPPLY_PROP_STATUS,
+							  &val))
+		/* A charger knows better whether it is still charging. */
+		adc_bat->status = val.intval;
 	else
 		adc_bat->status = POWER_SUPPLY_STATUS_CHARGING;
 
