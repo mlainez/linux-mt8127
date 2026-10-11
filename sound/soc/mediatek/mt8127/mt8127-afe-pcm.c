@@ -101,9 +101,10 @@ enum {
 	MT8127_AFE_IO_ADDA = MT8127_AFE_MEMIF_NUM,
 };
 
+/* The AFE has two MCU interrupt counters for its memory interfaces. */
 enum {
-	MT8127_AFE_IRQ_DL1,
-	MT8127_AFE_IRQ_VUL,
+	MT8127_AFE_IRQ1,
+	MT8127_AFE_IRQ2,
 	MT8127_AFE_IRQ_NUM,
 };
 
@@ -519,7 +520,7 @@ static const struct mtk_base_memif_data memif_data[MT8127_AFE_MEMIF_NUM] = {
 
 static const struct mtk_base_irq_data irq_data[MT8127_AFE_IRQ_NUM] = {
 	{
-		.id = MT8127_AFE_IRQ_DL1,
+		.id = MT8127_AFE_IRQ1,
 		.irq_cnt_reg = AFE_IRQ_CNT1,
 		.irq_cnt_shift = 0,
 		.irq_cnt_maskbit = 0x3ffff,
@@ -531,7 +532,7 @@ static const struct mtk_base_irq_data irq_data[MT8127_AFE_IRQ_NUM] = {
 		.irq_clr_reg = AFE_IRQ_CLR,
 		.irq_clr_shift = 0,
 	}, {
-		.id = MT8127_AFE_IRQ_VUL,
+		.id = MT8127_AFE_IRQ2,
 		.irq_cnt_reg = AFE_IRQ_CNT2,
 		.irq_cnt_shift = 0,
 		.irq_cnt_maskbit = 0x3ffff,
@@ -685,13 +686,18 @@ static int mt8127_afe_pcm_dev_probe(struct platform_device *pdev)
 	if (!afe->irqs)
 		return -ENOMEM;
 
-	for (i = 0; i < afe->irqs_size; i++) {
-		afe->memif[i].data = &memif_data[i];
+	for (i = 0; i < afe->irqs_size; i++)
 		afe->irqs[i].irq_data = &irq_data[i];
-		afe->irqs[i].irq_occupyed = true;
-		afe->memif[i].irq_usage = i;
-		afe->memif[i].const_irq = 1;
+
+	for (i = 0; i < afe->memif_size; i++) {
+		afe->memif[i].data = &memif_data[i];
+		afe->memif[i].irq_usage = -1;
 	}
+
+	/* DL1 owns IRQ1; the capture interfaces take IRQ2 when opened */
+	afe->memif[MT8127_AFE_MEMIF_DL1].irq_usage = MT8127_AFE_IRQ1;
+	afe->memif[MT8127_AFE_MEMIF_DL1].const_irq = 1;
+	afe->irqs[MT8127_AFE_IRQ1].irq_occupyed = true;
 
 	afe->mtk_afe_hardware = &mt8127_afe_hardware;
 	afe->memif_fs = mt8127_memif_fs;
