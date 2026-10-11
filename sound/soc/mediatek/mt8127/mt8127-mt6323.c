@@ -119,9 +119,19 @@ SND_SOC_DAILINK_DEFS(capture,
 		     DAILINK_COMP_ARRAY(COMP_DUMMY()),
 		     DAILINK_COMP_ARRAY(COMP_EMPTY()));
 
+SND_SOC_DAILINK_DEFS(fm_capture,
+		     DAILINK_COMP_ARRAY(COMP_CPU("AWB")),
+		     DAILINK_COMP_ARRAY(COMP_DUMMY()),
+		     DAILINK_COMP_ARRAY(COMP_EMPTY()));
+
 SND_SOC_DAILINK_DEFS(codec,
 		     DAILINK_COMP_ARRAY(COMP_CPU("ADDA")),
 		     DAILINK_COMP_ARRAY(COMP_CODEC(NULL, "mt6323-aif1")),
+		     DAILINK_COMP_ARRAY(COMP_EMPTY()));
+
+SND_SOC_DAILINK_DEFS(fm_i2s,
+		     DAILINK_COMP_ARRAY(COMP_CPU("I2S")),
+		     DAILINK_COMP_ARRAY(COMP_DUMMY()),
 		     DAILINK_COMP_ARRAY(COMP_EMPTY()));
 
 static struct snd_soc_dai_link mt8127_mt6323_dais[] = {
@@ -144,12 +154,28 @@ static struct snd_soc_dai_link mt8127_mt6323_dais[] = {
 		.capture_only = 1,
 		SND_SOC_DAILINK_REG(capture),
 	},
-	/* Back-end DAI link */
+	{
+		.name = "FM Capture",
+		.stream_name = "FM Capture",
+		.trigger = { SND_SOC_DPCM_TRIGGER_POST,
+			     SND_SOC_DPCM_TRIGGER_POST },
+		.dynamic = 1,
+		.capture_only = 1,
+		SND_SOC_DAILINK_REG(fm_capture),
+	},
+	/* Back-end DAI links */
 	{
 		.name = "Codec",
 		.no_pcm = 1,
 		.init = mt8127_mt6323_codec_init,
 		SND_SOC_DAILINK_REG(codec),
+	},
+	{
+		/* I2S input from the FM receiver of the CONSYS */
+		.name = "FM I2S",
+		.no_pcm = 1,
+		.capture_only = 1,
+		SND_SOC_DAILINK_REG(fm_i2s),
 	},
 };
 
@@ -199,7 +225,7 @@ static int mt8127_mt6323_dev_probe(struct platform_device *pdev)
 	for_each_card_prelinks(card, i, dai_link) {
 		if (!dai_link->platforms->name)
 			dai_link->platforms->of_node = platform_node;
-		if (dai_link->no_pcm)
+		if (dai_link->no_pcm && dai_link->num_codecs)
 			dai_link->codecs->of_node = codec_node;
 	}
 
