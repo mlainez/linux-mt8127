@@ -8,6 +8,7 @@
 #include <dt-bindings/clock/mt8127-clk.h>
 #include <dt-bindings/interrupt-controller/irq.h>
 #include <dt-bindings/interrupt-controller/arm-gic.h>
+#include <dt-bindings/power/mediatek,mt8127-power.h>
 
 / {
 	#address-cells = <2>;
@@ -70,6 +71,7 @@
 			compatible = "fixed-clock";
 			clock-frequency = <32000>;
 			#clock-cells = <0>;
+			clock-output-names = "rtc32k";
 		};
 
 		uart_clk: dummy26m {
@@ -100,6 +102,12 @@
 		compatible = "simple-bus";
 		ranges;
 
+		topckgen: clock-controller@10000000 {
+			compatible = "mediatek,mt8127-topckgen", "syscon";
+			reg = <0 0x10000000 0 0x1000>;
+			#clock-cells = <1>;
+		};
+
 		infracfg: clock-controller@10001000 {
 			compatible = "mediatek,mt8127-infracfg", "syscon";
 			reg = <0 0x10001000 0 0x1000>;
@@ -109,6 +117,16 @@
 		syscfg_pctl_a: syscon@10005000 {
 			compatible = "mediatek,mt8127-pctl-a-syscfg", "syscon";
 			reg = <0 0x10005000 0 0x1000>;
+		};
+
+		scpsys: power-controller@10006000 {
+			compatible = "mediatek,mt8127-scpsys", "syscon";
+			reg = <0 0x10006000 0 0x1000>;
+			#power-domain-cells = <1>;
+			infracfg = <&infracfg>;
+			clocks = <&topckgen CLK_TOP_MM_SEL>,
+				 <&topckgen CLK_TOP_MFG_SEL>;
+			clock-names = "mm", "mfg";
 		};
 
 		pio: pinctrl@1000b000 {
@@ -232,6 +250,34 @@
 			#address-cells = <1>;
 			#size-cells = <0>;
 			status = "disabled";
+		};
+
+		mfgcfg: clock-controller@13000000 {
+			compatible = "mediatek,mt8127-mfgcfg", "syscon";
+			reg = <0 0x13000000 0 0x1000>;
+			#clock-cells = <1>;
+			power-domains = <&scpsys MT8127_POWER_DOMAIN_MFG>;
+		};
+
+		mmsys: syscon@14000000 {
+			compatible = "mediatek,mt8127-mmsys", "syscon";
+			reg = <0 0x14000000 0 0x1000>;
+			#clock-cells = <1>;
+			power-domains = <&scpsys MT8127_POWER_DOMAIN_DISP>;
+		};
+
+		imgsys: clock-controller@15000000 {
+			compatible = "mediatek,mt8127-imgsys", "syscon";
+			reg = <0 0x15000000 0 0x1000>;
+			#clock-cells = <1>;
+			power-domains = <&scpsys MT8127_POWER_DOMAIN_ISP>;
+		};
+
+		vdecsys: clock-controller@16000000 {
+			compatible = "mediatek,mt8127-vdecsys", "syscon";
+			reg = <0 0x16000000 0 0x1000>;
+			#clock-cells = <1>;
+			power-domains = <&scpsys MT8127_POWER_DOMAIN_VDEC>;
 		};
 	};
 };
