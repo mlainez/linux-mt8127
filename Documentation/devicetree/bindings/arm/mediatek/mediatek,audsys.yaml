@@ -21,6 +21,7 @@ properties:
               - mediatek,mt6765-audsys
               - mediatek,mt6779-audsys
               - mediatek,mt7622-audsys
+              - mediatek,mt8127-audsys
               - mediatek,mt8167-audsys
               - mediatek,mt8173-audsys
               - mediatek,mt8183-audiosys
@@ -40,6 +41,10 @@ properties:
 
   '#clock-cells':
     const: 1
+
+  clocks:
+    description: Bus clock that gives access to the registers.
+    maxItems: 1
 
   audio-controller:
     type: object
