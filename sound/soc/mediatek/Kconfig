@@ -87,6 +87,16 @@ config SND_SOC_MT8127
 	  Select Y if you have such device.
 	  If unsure select "N".
 
+config SND_SOC_MT8127_MT6323
+	tristate "ASoC Audio driver for MT8127 with MT6323 codec"
+	depends on SND_SOC_MT8127 && MFD_MT6397
+	select SND_SOC_MT6323
+	help
+	  This adds the ASoC machine driver for MediaTek MT8127 boards
+	  with the MT6323 PMIC codec, such as the Lenovo Tab3 7.
+	  Select Y if you have such device.
+	  If unsure select "N".
+
 config SND_SOC_MT8173
 	tristate "ASoC support for Mediatek MT8173 chip"
 	depends on ARCH_MEDIATEK
