@@ -252,6 +252,13 @@
 			status = "disabled";
 		};
 
+		audsys: clock-controller@11220000 {
+			compatible = "mediatek,mt8127-audsys", "syscon";
+			reg = <0 0x11220000 0 0x1000>;
+			#clock-cells = <1>;
+			clocks = <&infracfg CLK_INFRA_AUDIO>;
+		};
+
 		mfgcfg: clock-controller@13000000 {
 			compatible = "mediatek,mt8127-mfgcfg", "syscon";
 			reg = <0 0x13000000 0 0x1000>;
