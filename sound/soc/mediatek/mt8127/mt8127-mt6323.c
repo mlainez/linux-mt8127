@@ -67,6 +67,7 @@ static const struct snd_soc_dapm_widget mt8127_mt6323_widgets[] = {
 	SND_SOC_DAPM_HP("Headphone", NULL),
 	SND_SOC_DAPM_MIC("Int Mic", NULL),
 	SND_SOC_DAPM_MIC("Headset Mic", NULL),
+	SND_SOC_DAPM_INPUT("FM Radio"),
 };
 
 static const struct snd_soc_dapm_route mt8127_mt6323_routes[] = {
@@ -78,6 +79,8 @@ static const struct snd_soc_dapm_route mt8127_mt6323_routes[] = {
 	{ "MIC1", NULL, "Int Mic" },
 	{ "Headset Mic", NULL, "MICBIAS" },
 	{ "MIC2", NULL, "Headset Mic" },
+	/* The FM receiver drives the I2S input through a dummy codec, which has no DAPM endpoint of its own. */
+	{ "I2S Capture", NULL, "FM Radio" },
 };
 
 static const struct snd_kcontrol_new mt8127_mt6323_controls[] = {
