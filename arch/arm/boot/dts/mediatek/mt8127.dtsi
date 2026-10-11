@@ -257,6 +257,17 @@
 			reg = <0 0x11220000 0 0x1000>;
 			#clock-cells = <1>;
 			clocks = <&infracfg CLK_INFRA_AUDIO>;
+
+			afe: audio-controller {
+				compatible = "mediatek,mt8127-afe-pcm";
+				interrupts = <GIC_SPI 104 IRQ_TYPE_LEVEL_LOW>;
+				clocks = <&infracfg CLK_INFRA_AUDIO>,
+					 <&topckgen CLK_TOP_AUDIO_SEL>,
+					 <&topckgen CLK_TOP_AUD_INTBUS_SEL>,
+					 <&audsys CLK_AUD_AFE>;
+				clock-names = "infra_sys_audio_clk", "top_pdn_audio",
+					      "top_pdn_aud_intbus", "aud_afe";
+			};
 		};
 
 		mfgcfg: clock-controller@13000000 {
