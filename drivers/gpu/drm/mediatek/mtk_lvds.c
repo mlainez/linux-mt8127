@@ -184,6 +184,9 @@ static void mtk_lvds_bridge_atomic_pre_enable(struct drm_bridge *bridge,
 	if (mtk_lvds_power_on(lvds, crtc_state->adjusted_mode.clock * 1000UL))
 		return;
 
+	/* Let the MIPI TX PLL settle, as the vendor driver does */
+	usleep_range(1000, 1500);
+
 	mtk_lvds_update_bits(lvds->ana + LVDS_VPLL_CTL2,
 			     LVDS_VPLL_CLK_SEL_MIPI | LVDS_VPLL_EN,
 			     LVDS_VPLL_CLK_SEL_MIPI | LVDS_VPLL_EN);
