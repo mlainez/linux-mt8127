@@ -101,26 +101,26 @@ static u32 mtk_lvds_data_fmt(struct drm_connector *connector)
 	return LVDS_FMT_DATA_RGB888;
 }
 
+static void mtk_lvds_tx_off(struct mtk_lvds *lvds)
+{
+	writel(0, lvds->ana + LVDSTX_ANA_CTL3);
+	usleep_range(5, 10);
+	writel(0, lvds->ana + LVDSTX_ANA_CTL2);
+	usleep_range(5, 10);
+	writel(0, lvds->regs + LVDS_CLK_CTRL);
+	writel(0, lvds->regs + LVDS_OUT_CTRL);
+	usleep_range(5, 10);
+	mtk_lvds_update_bits(lvds->ana + LVDS_VPLL_CTL2, LVDS_VPLL_EN, 0);
+}
+
 static int mtk_lvds_power_on(struct mtk_lvds *lvds, unsigned long pixel_rate)
 {
 	int ret;
 
-	ret = clk_set_rate(lvds->pll, pixel_rate * LVDS_PLL_PIXEL_RATIO);
-	if (ret) {
-		dev_err(lvds->dev, "Failed to set PLL rate: %d\n", ret);
-		return ret;
-	}
-
-	ret = clk_prepare_enable(lvds->pll);
-	if (ret) {
-		dev_err(lvds->dev, "Failed to enable PLL: %d\n", ret);
-		return ret;
-	}
-
 	ret = clk_prepare_enable(lvds->pixel_clk);
 	if (ret) {
 		dev_err(lvds->dev, "Failed to enable pixel clock: %d\n", ret);
-		goto err_pll;
+		return ret;
 	}
 
 	ret = clk_prepare_enable(lvds->cts_clk);
@@ -129,20 +129,39 @@ static int mtk_lvds_power_on(struct mtk_lvds *lvds, unsigned long pixel_rate)
 		goto err_pixel;
 	}
 
+	/*
+	 * The bootloader may have left the transmitter running. Stop it before
+	 * its PLL is reprogrammed: a transmitter that keeps running across the
+	 * PLL change can send a stream the panel does not lock onto.
+	 */
+	mtk_lvds_tx_off(lvds);
+
+	ret = clk_set_rate(lvds->pll, pixel_rate * LVDS_PLL_PIXEL_RATIO);
+	if (ret) {
+		dev_err(lvds->dev, "Failed to set PLL rate: %d\n", ret);
+		goto err_cts;
+	}
+
+	ret = clk_prepare_enable(lvds->pll);
+	if (ret) {
+		dev_err(lvds->dev, "Failed to enable PLL: %d\n", ret);
+		goto err_cts;
+	}
+
 	return 0;
 
+err_cts:
+	clk_disable_unprepare(lvds->cts_clk);
 err_pixel:
 	clk_disable_unprepare(lvds->pixel_clk);
-err_pll:
-	clk_disable_unprepare(lvds->pll);
 	return ret;
 }
 
 static void mtk_lvds_power_off(struct mtk_lvds *lvds)
 {
+	clk_disable_unprepare(lvds->pll);
 	clk_disable_unprepare(lvds->cts_clk);
 	clk_disable_unprepare(lvds->pixel_clk);
-	clk_disable_unprepare(lvds->pll);
 }
 
 static void mtk_lvds_bridge_atomic_pre_enable(struct drm_bridge *bridge,
@@ -164,6 +183,9 @@ static void mtk_lvds_bridge_atomic_pre_enable(struct drm_bridge *bridge,
 
 	if (mtk_lvds_power_on(lvds, crtc_state->adjusted_mode.clock * 1000UL))
 		return;
+
+	/* Let the MIPI TX PLL settle, as the vendor driver does */
+	usleep_range(1000, 1500);
 
 	mtk_lvds_update_bits(lvds->ana + LVDS_VPLL_CTL2,
 			     LVDS_VPLL_CLK_SEL_MIPI | LVDS_VPLL_EN,
@@ -207,15 +229,7 @@ static void mtk_lvds_bridge_atomic_post_disable(struct drm_bridge *bridge,
 	if (!lvds->enabled)
 		return;
 
-	writel(0, lvds->ana + LVDSTX_ANA_CTL3);
-	usleep_range(5, 10);
-	writel(0, lvds->ana + LVDSTX_ANA_CTL2);
-	usleep_range(5, 10);
-	writel(0, lvds->regs + LVDS_CLK_CTRL);
-	writel(0, lvds->regs + LVDS_OUT_CTRL);
-	usleep_range(5, 10);
-	mtk_lvds_update_bits(lvds->ana + LVDS_VPLL_CTL2, LVDS_VPLL_EN, 0);
-
+	mtk_lvds_tx_off(lvds);
 	mtk_lvds_power_off(lvds);
 	lvds->enabled = false;
 }
